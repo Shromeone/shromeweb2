@@ -17,6 +17,7 @@
   }
   let alreadySetup = false;
 
+  let volume = $state(400);
   let temperatureKelvin = $state(298);
   let particleCount = $state(10);
   let hitCount = $state(0);
@@ -33,7 +34,7 @@
   /** @type {CanvasRenderingContext2D} */
   let ctx;
 
-  $effect((particleCount) => spawnParticles());
+  $effect((particleCount, volume) => spawnParticles());
 
   function spawnParticles() {
     particles = [];
@@ -53,6 +54,7 @@
     if (!canvas) return;
     spawnParticles();
 
+    volume = 420;
     temperatureKelvin = 298;
     particleCount = 20;
     alreadySetup = true;
@@ -99,6 +101,10 @@
       hitCount += 1;
     }
 
+    if (p.x > canvas.width) {
+      p.x = 10;
+    }
+
     if (
       p.x + dx + particleRadius > canvas.width ||
       p.x + dx + particleRadius < 0
@@ -130,7 +136,7 @@
   }
 </script>
 
-<canvas bind:this={canvas} width="420" , height="420"></canvas>
+<canvas bind:this={canvas} width={volume} , height="420"></canvas>
 
 <button onclick={setup}>Reset</button>
 <p>{hitCount} hits</p>
@@ -151,6 +157,9 @@
   class="slider"
 />
 <span>{particleCount} particle{particleCount > 1 ? "s" : ""}</span>
+
+<input type="range" min="30" max="2000" bind:value={volume} class="slider" />
+<span>{volume}cm³</span>
 
 <style>
   canvas {
