@@ -1,0 +1,210 @@
+
+  .passage-select,
+  .time-select {
+    display: flex;
+    align-items: center;
+    gap: 3em;
+  }
+
+  .passage-select select,
+  .time-select select {
+    flex: 1;
+  }
+
+  .results-screen,
+  .settings-screen {
+    opacity: 100%;
+    position: fixed;
+    display: flex;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: rgba(0, 0, 0, 0.258);
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+  }
+
+  .results-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 100px;
+    background-color: rgb(91, 97, 148);
+    width: 60%;
+    padding: 1.5em 3em 1em 3em;
+    border-radius: 2rem;
+    border: 3px dashed rgb(38, 38, 84);
+    box-shadow: 0px 0px 30px black;
+    justify-content: center;
+  }
+
+  .settings-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    background-color: rgb(91, 97, 148);
+    width: 60%;
+    padding: 1.5em 3em 1em 3em;
+    border-radius: 2rem;
+    border: 3px dashed rgb(38, 38, 84);
+    box-shadow: 0px 0px 30px black;
+    justify-content: center;
+  }
+
+  .settings-panel button {
+    margin-top: 4rem;
+  }
+
+  .results-panel h2,
+  .settings-panel h2 {
+    color: white;
+    text-align: center;
+    font-size: 2.5rem;
+    margin: 0;
+    margin-bottom: 1em;
+  }
+
+  .results-panel p {
+    margin: 0;
+    margin-bottom: 4px;
+  }
+  .results-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .panel-buttons {
+    display: flex;
+    justify-content: space-around;
+  }
+
+  .panel-buttons button {
+    width: 30%;
+    border: none;
+    border-radius: 3em;
+    padding: 1em 3em;
+  }
+
+  .panel-buttons button:hover {
+    opacity: 70%;
+  }
+  body {
+    padding: 0;
+    margin: 0;
+    background-color: black;
+  }
+
+  .background {
+    background-color: black;
+    min-height: 100vh;
+    width: 100%;
+  }
+
+  .info-bar {
+    display: flex;
+    gap: 20px;
+  }
+
+  .test-content {
+    padding: 3% 2%;
+  }
+
+  .test-content p {
+    display: inline-block;
+    font-family: "Noto Serif TC";
+    font-size: 2rem;
+    margin: 5px;
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.416);
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  .char {
+    display: inline-block;
+    position: relative;
+  }
+
+  .wrong {
+    color: red;
+  }
+
+  .correct {
+    color: rgb(101, 196, 101);
+  }
+
+  #type-input {
+    position: absolute;
+    color: white;
+    left: 0;
+    font-size: 1rem;
+    height: 2rem;
+    background-color: transparent;
+    border: none;
+    overflow: hidden;
+    width: 0.1px;
+  }
+
+  #type-input:focus {
+    border: none;
+    outline: 0;
+    caret-color: rgba(0, 0, 0, 0);
+  }
+
+  .hidden {
+    visibility: hidden;
+    opacity: 0%;
+  }
+
+  #input-display {
+    z-index: 3;
+    white-space: nowrap;
+    color: white;
+    position: absolute;
+    background-color: rgb(85, 85, 85);
+    text-align: left;
+    padding: 0.2rem 0.2rem;
+    opacity: 100%;
+  }
+
+  #input-display:blank {
+    display: none;
+  }
+  .current-char {
+    display: inline-block;
+    position: relative;
+  }
+
+  .current-char p {
+    color: skyblue;
+    border: 1px solid skyblue;
+  }
+
+  .inactive p {
+    border-color: grey;
+    color: grey;
+  }
+
+  p {
+    color: white;
+  }
+
+  .type-prep {
+    font-size: 2rem;
+    width: 80%;
+    display: inline-block;
+  }
+
+  .restart-btn {
+    padding: 1em;
+    font-size: 1rem;
+    border-radius: 1rem;
+    border: none;
+  }
+
+  .restart-btn:hover {
+    opacity: 80%;
+  }
