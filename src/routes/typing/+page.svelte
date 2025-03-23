@@ -43,7 +43,8 @@
   let focused = $state(false);
 
   let isCompo = $state(false);
-  let timeLimit = $state(0);
+  let timeLimit = $state(60);
+  let fontSelect = $state("LXGW WenKai TC");
 
   let points = $state(0);
   let basePoints = $state(0);
@@ -344,10 +345,16 @@
 </script>
 
 <svelte:head>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <!-- <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
     href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC&display=swap"
+    rel="stylesheet"
+  /> -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC&family=Noto+Serif+HK:wght@200..900&display=swap"
     rel="stylesheet"
   />
 </svelte:head>
@@ -397,7 +404,7 @@
   >
     {showInputDisplay ? input : ""}
   </div>
-  <div class="test-content">
+  <div class="test-content" style="--char-font: {fontSelect}">
     {#each content as char, index (index)}
       <div class="char" id="char-{index}" onmouseenter={cancelInput}>
         <a
@@ -461,6 +468,13 @@
           {#each timeLimits as limit}
             <option value={limit}>{timeToChinese(limit)}</option>
           {/each}
+        </select>
+      </div>
+      <div class="font-select">
+        <p>字體</p>
+        <select bind:value={fontSelect} id="font-select" placeholder="">
+          <option value={"LXGW WenKai TC"}>霞鶩體</option>
+          <option value={"Noto Serif HK"}>Noto Sans</option>
         </select>
       </div>
       <button onclick={() => setSettingsVisibility(false)}>關閉</button>
@@ -630,13 +644,15 @@
   }
 
   .test-content p {
+    color: lightgrey;
     display: inline-block;
-    font-family: "Noto Serif TC";
+    font-family: var(--char-font);
+    /* font-family: ""; */
     font-size: max(18px, 2.3vw);
     margin: max(4px, 0.3vw);
-    width: max(24px, 3vw);
-    height: max(24px, 3vw);
-    border: 1px solid rgba(255, 255, 255, 0.416);
+    width: max(20px, 2.6vw);
+    height: max(20px, 2.6w);
+    /* border: 1px solid rgba(255, 255, 255, 0.416); */
     text-align: center;
     vertical-align: middle;
   }
@@ -647,11 +663,11 @@
   }
 
   .test-content .wrong {
-    color: red;
-    border: 1px solid rgb(194, 143, 143);
+    color: rgb(221, 59, 59);
+    /* border: 1px solid rgb(194, 143, 143); */
   }
 
-  .correct {
+  .test-content .correct {
     color: rgb(101, 196, 101);
   }
 
@@ -699,7 +715,7 @@
 
   .current-char p {
     color: skyblue;
-    border: 1px solid skyblue;
+    /* border: 1px solid skyblue; */
   }
 
   .inactive p {
