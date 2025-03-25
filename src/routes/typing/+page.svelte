@@ -12,7 +12,7 @@
     PLAY: 1,
     FINISH: 2,
   });
-  const removeContentSpace = true;
+  const removeContentSpace = false;
 
   let content = $state(
     passages[Math.round(Math.random() * (Object.keys(passages).length - 1))]
