@@ -54,6 +54,7 @@
   }
 
   function quickRegexChange(val = "", add = true) {
+    console.log("Quick regex change: " + add);
     if (add) {
       if (!quickRegexList.includes(val)) quickRegexList.push(val);
     } else {
@@ -71,6 +72,7 @@
     if (add) {
       matchOptionsList.push(val);
       if (!replacer.includes("<m>")) replacer += "<m>";
+      if (regexCmd === "") regexCmd = ".";
     } else {
       matchOptionsList.splice(matchOptionsList.indexOf(val), 1);
     }
@@ -160,7 +162,7 @@
         {#each matchOptions as option}
           <Checkbox
             param={option.func}
-            on:click={(e) => matchOptionChange(option.func, e.detail)}
+            click={(checked) => matchOptionChange(option.func, checked)}
             >{option.text}</Checkbox
           >
         {/each}
@@ -171,7 +173,7 @@
       <p>Quick select</p>
       <div class="quick-options">
         {#each quickSelectOptions as option}
-          <Checkbox :click={(e) => quickRegexChange(option.regex, e.detail)}
+          <Checkbox click={(checked) => quickRegexChange(option.regex, checked)}
             >{option.text}</Checkbox
           >
         {/each}

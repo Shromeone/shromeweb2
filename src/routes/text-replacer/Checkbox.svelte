@@ -4,9 +4,9 @@
   let { children, click } = $props();
   let checked = $state(false);
 
-  function toggleCheck() {
+  function toggleCheck(e) {
     checked = !checked;
-    click();
+    click(checked);
   }
 </script>
 

@@ -14,7 +14,10 @@
   });
   const removeContentSpace = true;
 
-  let content = $state(passages[0].content);
+  let content = $state(
+    passages[Math.round(Math.random() * (Object.keys(passages).length - 1))]
+      .content
+  );
 
   let currentWordIndex = $state(0);
   let input = $state();
