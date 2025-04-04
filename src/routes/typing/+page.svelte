@@ -106,10 +106,33 @@
     inputBox.innerHTML = "";
     input = "";
   }
+  function adjustHintsPosition(event) {
+    const charElement = event.currentTarget;
+    const hintsContainer = charElement.querySelector(".hints-container");
+    const charRect = charElement.getBoundingClientRect();
+    const hintsWidth = 336; // 21rem * 16px (assuming 1rem = 16px)
+    const viewportWidth = window.innerWidth;
 
+    // Reset position
+    hintsContainer.style.right = "";
+    hintsContainer.style.left = "";
+
+    // Check if there's enough space to the right
+    if (charRect.right + hintsWidth <= viewportWidth) {
+      hintsContainer.style.left = "0";
+    } else {
+      // Not enough space to the right, position to the left
+      hintsContainer.style.right = "0";
+    }
+  }
   function cancelInput() {
     clearInput();
     typeCancelled = true;
+  }
+
+  function onMouseEnterChar(e) {
+    cancelInput();
+    adjustHintsPosition(e);
   }
 
   function toHalfWidth(x) {
@@ -409,7 +432,7 @@
   </div>
   <div class="test-content" style="--char-font: {fontSelect}">
     {#each content as char, index (index)}
-      <div class="char" id="char-{index}" onmouseenter={cancelInput}>
+      <div class="char" id="char-{index}" onmouseenter={onMouseEnterChar}>
         <a
           href={"https://www.hkcards.com/cj/cj-char-" + char + ".html"}
           target="_blank"
@@ -759,6 +782,7 @@
   .hints-container {
     display: flex;
     top: 5.5rem;
+    /* left: 4rem; */
     width: 21rem;
     height: 4.5rem;
     background-color: black;
