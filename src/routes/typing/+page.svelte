@@ -758,6 +758,7 @@
   }
   .hints-container {
     display: flex;
+    top: 5.5rem;
     width: 21rem;
     height: 4.5rem;
     background-color: black;
