@@ -428,6 +428,12 @@
             <p>{char}</p>
           {/if}
         </a>
+        <div class="hints-container">
+          <img
+            class="hints-picture"
+            src="https://www.hkcards.com/img/cj/{char}.png"
+          />
+        </div>
       </div>
     {/each}
   </div>
@@ -745,5 +751,28 @@
 
   .round-btn:hover {
     opacity: 80%;
+  }
+
+  .char:hover .hints-container {
+    opacity: 100%;
+  }
+  .hints-container {
+    display: flex;
+    width: 21rem;
+    height: 4.5rem;
+    background-color: black;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    position: absolute;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    border-radius: 2rem;
+    box-shadow: 0px 0px 30px black;
+  }
+
+  .hints-picture {
+    width: 20rem;
   }
 </style>
