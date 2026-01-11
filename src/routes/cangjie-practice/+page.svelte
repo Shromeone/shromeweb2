@@ -206,7 +206,7 @@
   }
 
   .question.previous {
-    transform: translateX(-150%);
+    transform: translateX(-6rem);
     color: grey;
     font-size: 3rem;
   }
@@ -217,14 +217,14 @@
   }
 
   .question.next {
-    transform: translateX(150%);
+    transform: translateX(6rem);
     color: grey;
     font-size: 3rem;
     opacity: 1;
   }
 
   .question-container.animate .current {
-    transform: translateX(-150%);
+    transform: translateX(-6rem);
     color: grey;
     font-size: 3rem;
   }
@@ -237,20 +237,21 @@
   }
 
   .question-container.animate .previous {
-    transform: translateX(-300%);
-    opacity: 0;
+    transform: translateX(-10rem);
     font-size: 1rem;
+    opacity: 0;
+
   }
 
   .question.next-next {
-    transform: translateX(300%);
+    transform: translateX(6rem);
     color: grey;
     font-size: 1rem;
     opacity: 0;
   }
 
   .question-container.animate .next-next {
-    transform: translateX(150%);
+    transform: translateX(6rem);
     color: grey;
     font-size: 3rem;
     opacity: 1;
