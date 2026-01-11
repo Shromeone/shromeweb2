@@ -1,38 +1,53 @@
-# sv
+# ShromeWeb2
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A SvelteKit web application with various utilities and tools.
 
-## Creating a project
+## Running Locally
 
-If you're seeing this, you've probably already done this step. Congrats!
+### Prerequisites
 
-```bash
-# create a new project in the current directory
-npx sv create
+- Node.js (version 16 or higher recommended)
+- npm (comes with Node.js)
 
-# create a new project in my-app
-npx sv create my-app
-```
+### Setup Steps
 
-## Developing
+1. **Install dependencies** (if not already installed):
+   ```bash
+   npm install
+   ```
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+2. **Start the development server**:
+   ```bash
+   npm run dev
+   ```
 
-```bash
-npm run dev
+   The server will start and you'll see output like:
+   ```
+   VITE v5.x.x  ready in xxx ms
+   
+   ➜  Local:   http://localhost:5173/
+   ➜  Network: use --host to expose
+   ```
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
+3. **Open in browser**:
+   - Navigate to `http://localhost:5173/` in your web browser
+   - Or use the `--open` flag to automatically open:
+     ```bash
+     npm run dev -- --open
+     ```
 
-## Building
+### Available Scripts
 
-To create a production version of your app:
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build locally
 
-```bash
-npm run build
-```
+## Project Structure
 
-You can preview the production build with `npm run preview`.
+- `/src/routes` - Application pages and routes
+- `/src/lib` - Shared components and utilities
+- `/static` - Static assets (images, etc.)
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+## Development
+
+The development server supports hot module replacement (HMR), so changes to your code will automatically refresh in the browser.

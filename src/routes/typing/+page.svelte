@@ -44,6 +44,7 @@
   let settingsOpen = $state(false);
 
   let focused = $state(false);
+  let searchMode = $state(false);
 
   let isCompo = $state(false);
   let timeLimit = $state(60);
@@ -131,6 +132,7 @@
   }
 
   function onMouseEnterChar(e) {
+    if (!searchMode) return;
     cancelInput();
     adjustHintsPosition(e);
   }
@@ -151,6 +153,9 @@
     updateInfoInterval = setInterval(updateInfo, 2000);
     updateTimerInterval = setInterval(updateTimer, 100);
     focusInputInterval = setInterval(tryFocus, 300);
+    searchMode = false; // Disable search mode when typing starts
+    // Scroll to position the first character at 30% from top
+    setTimeout(() => updateScroll(), 100);
   }
 
   function updateTimer(time = -1) {
@@ -170,6 +175,10 @@
   function timeUp() {
     isTimeUp = true;
     finishGame();
+  }
+
+  function compoStart(e) {
+    isCompo = true;
   }
 
   async function compoUpdate(e) {
@@ -203,16 +212,27 @@
 
   function updateInputBoxPos() {
     const currentChar = document.querySelector(`#char-${currentWordIndex}`);
+    if (!currentChar) return;
     const rect = currentChar.getBoundingClientRect();
     inputBox.style.top = rect.top + scrollY + inputBoxOffset.y + "px";
     inputBox.style.left = rect.left + inputBoxOffset.x + "px";
     currentChar.appendChild(inputDisplay);
+    // Update scroll position after updating input box position
+    if (gameState === GameState.PLAY) {
+      updateScroll();
+    }
   }
 
   function keyDown(e) {
     typeCancelled = false;
+    if (e.key !== "Enter" && e.key !== "Escape" && !e.ctrlKey && !e.metaKey) {
+      searchMode = false; // Disable search mode when any character is typed
+    }
     if (e.key === "Backspace") {
-      tryDelete();
+      // Don't delete previous character if currently composing (IME composition)
+      if (!isCompo) {
+        tryDelete();
+      }
     }
   }
 
@@ -224,20 +244,32 @@
     }
 
     isCompo = false;
+    searchMode = false; // Disable search mode when typing
     validateInput(e.data);
     // console.log(e.inputType);
     setTimeout(clearInput, 0);
   }
 
   function updateScroll() {
+    if (gameState !== GameState.PLAY) return;
     const currentChar = document.querySelector(`#char-${currentWordIndex}`);
-    const y = currentChar.getBoundingClientRect().top + scrollY;
-    const percentage = Math.abs(scrollY - y) / innerHeight;
-    // console.log(percentage);
-    if (percentage < autoScrollPercentage) return;
-    let scrY = scrollY;
-    scroll({ top: y - autoScrollOffset * innerHeight, behavior: "smooth" });
-    // scroll({ top: y - autoScrollOffset * innerHeight, behavior: "smooth" });
+    if (!currentChar) return;
+    
+    // Use requestAnimationFrame to ensure DOM is updated
+    requestAnimationFrame(() => {
+      const charRect = currentChar.getBoundingClientRect();
+      const charTop = charRect.top + scrollY;
+      const targetPosition = window.innerHeight * 0.3; // 30% from top
+      const currentPosition = charRect.top; // Current position relative to viewport
+      
+      // Calculate the scroll position needed to place the character at 30% from top
+      const scrollTarget = charTop - targetPosition;
+      
+      // Only scroll if the character is not already at the target position (with a small threshold)
+      if (Math.abs(currentPosition - targetPosition) > 10) {
+        scroll({ top: scrollTarget, behavior: "smooth" });
+      }
+    });
   }
 
   function validateInput(word) {
@@ -330,8 +362,10 @@
   }
 
   async function compoEnd(e) {
+    isCompo = false;
     if (gameState !== GameState.PLAY) return;
     if (!e.data) return;
+    searchMode = false; // Disable search mode when typing
     validateInput(e.data);
   }
 
@@ -393,11 +427,8 @@
       placeholder="喺度調整輸入法，準備好就撳Enter進入測試"
       bind:this={typePrep}
     />
-    <button class="round-btn" onclick={() => setSettingsVisibility(true)}
-      >設定</button
-    >
   {/if}
-  <div class="info-bar">
+  <div class="info-bar {gameState === GameState.PLAY ? 'fixed-top' : ''}">
     {#if gameState !== 3}
       {#if timeLimit > 0}
         <p>剩餘時間: {Math.ceil(timeLimit - timeElapsed / 1000)}秒</p>
@@ -415,6 +446,7 @@
     id="type-input"
     placeholder={gameState === GameState.PLAY ? "" : "在這裡開始打字"}
     oncompositionupdate={compoUpdate}
+    oncompositionstart={compoStart}
     oncompositionend={compoEnd}
     oninput={handlers(startTimer, halfInput)}
     onkeydown={keyDown}
@@ -430,13 +462,33 @@
   >
     {showInputDisplay ? input : ""}
   </div>
-  <div class="test-content" style="--char-font: {fontSelect}">
+  <div class="test-content {gameState === GameState.PLAY ? 'with-fixed-info' : ''}" style="--char-font: {fontSelect}">
     {#each content as char, index (index)}
-      <div class="char" id="char-{index}" onmouseenter={onMouseEnterChar}>
-        <a
-          href={"https://www.hkcards.com/cj/cj-char-" + char + ".html"}
-          target="_blank"
-        >
+      <div 
+        class="char {searchMode ? 'search-mode-active' : ''}" 
+        id="char-{index}" 
+        onmouseenter={onMouseEnterChar}
+      >
+        {#if searchMode}
+          <a
+            href={"https://www.hkcards.com/cj/cj-char-" + char + ".html"}
+            target="_blank"
+          >
+            {#if index === currentWordIndex}
+              <div class={focused ? "" : "inactive"}>
+                <div class="current-char">
+                  <p>{char}</p>
+                </div>
+              </div>
+            {:else if wrongIndexes.includes(index)}
+              <p class="wrong">{char}</p>
+            {:else if correctIndexes.includes(index)}
+              <p class="correct">{char}</p>
+            {:else}
+              <p>{char}</p>
+            {/if}
+          </a>
+        {:else}
           {#if index === currentWordIndex}
             <div class={focused ? "" : "inactive"}>
               <div class="current-char">
@@ -450,7 +502,7 @@
           {:else}
             <p>{char}</p>
           {/if}
-        </a>
+        {/if}
         <div class="hints-container">
           <img
             class="hints-picture"
@@ -462,23 +514,42 @@
   </div>
 
   {#if gameState === GameState.PLAY}
-    <button class="round-btn" onmouseenter={cancelInput} onclick={finishGame}
-      >結束遊戲</button
-    >
-  {/if}
-  {#if gameState !== GameState.START}
-    <button class="round-btn" onmouseenter={cancelInput} onclick={restart}
-      >重新開始</button
-    >
-  {/if}
-  {#if gameState === GameState.PLAY}
     <div style="height: 100vh"></div>
   {/if}
-  {#if gameState === GameState.FINISH}
-    <button class="round-btn" onclick={() => setResultsPanelVisibility(true)}
-      >查看成績</button
+
+  <div class="bottom-left-buttons">
+    <button 
+      class="search-mode-btn {searchMode ? 'active' : ''}" 
+      onclick={() => searchMode = !searchMode}
+      title={searchMode ? "關閉搜尋模式" : "開啟搜尋模式"}
     >
-  {/if}
+      {searchMode ? "搜尋模式: 開啟" : "搜尋模式: 關閉"}
+    </button>
+    
+    {#if gameState !== GameState.PLAY}
+      <button class="bottom-btn" onclick={() => setSettingsVisibility(true)}
+        >設定</button
+      >
+    {/if}
+    
+    {#if gameState === GameState.PLAY}
+      <button class="bottom-btn" onmouseenter={cancelInput} onclick={finishGame}
+        >結束遊戲</button
+      >
+    {/if}
+    
+    {#if gameState !== GameState.START}
+      <button class="bottom-btn" onmouseenter={cancelInput} onclick={restart}
+        >重新開始</button
+      >
+    {/if}
+    
+    {#if gameState === GameState.FINISH}
+      <button class="bottom-btn" onclick={() => setResultsPanelVisibility(true)}
+        >查看成績</button
+      >
+    {/if}
+  </div>
 
   <div class="settings-screen {settingsOpen ? '' : 'hidden'}">
     <div class="settings-panel">
@@ -588,6 +659,7 @@
     align-items: center;
     justify-content: center;
     transition: all 0.3s;
+    z-index: 2000;
   }
 
   .results-panel {
@@ -671,8 +743,23 @@
     gap: 20px;
   }
 
+  .info-bar.fixed-top {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background-color: rgba(0, 0, 0, 0.9);
+    padding: 10px 20px;
+    z-index: 999;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  }
+
   .test-content {
     padding: 3% 2%;
+  }
+
+  .test-content.with-fixed-info {
+    padding-top: calc(3% + 60px);
   }
 
   .test-content p {
@@ -765,19 +852,66 @@
     display: inline-block;
   }
 
-  .round-btn {
-    padding: 1em;
-    font-size: 1rem;
-    border-radius: 1rem;
-    border: none;
-  }
-
-  .round-btn:hover {
-    opacity: 80%;
-  }
 
   .char:hover .hints-container {
+    opacity: 0%;
+  }
+
+  .char.search-mode-active:hover .hints-container {
     opacity: 100%;
+  }
+
+  .bottom-left-buttons {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    z-index: 1000;
+    flex-wrap: wrap;
+  }
+
+  .search-mode-btn {
+    padding: 0.8em 1.5em;
+    font-size: 1rem;
+    border-radius: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    background-color: rgba(91, 97, 148, 0.8);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .search-mode-btn:hover {
+    background-color: rgba(91, 97, 148, 1);
+    border-color: rgba(255, 255, 255, 0.8);
+  }
+
+  .search-mode-btn.active {
+    background-color: rgba(101, 196, 101, 0.8);
+    border-color: rgb(101, 196, 101);
+  }
+
+  .search-mode-btn.active:hover {
+    background-color: rgba(101, 196, 101, 1);
+  }
+
+  .bottom-btn {
+    padding: 0.8em 1.5em;
+    font-size: 1rem;
+    border-radius: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    background-color: rgba(91, 97, 148, 0.8);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .bottom-btn:hover {
+    background-color: rgba(91, 97, 148, 1);
+    border-color: rgba(255, 255, 255, 0.8);
+    opacity: 80%;
   }
   .hints-container {
     display: flex;
