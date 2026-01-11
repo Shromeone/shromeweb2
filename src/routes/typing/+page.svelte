@@ -790,6 +790,7 @@
 
   .settings-panel button {
     margin-top: 4rem;
+    
   }
 
   .results-panel h2,

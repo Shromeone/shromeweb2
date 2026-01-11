@@ -1,4 +1,5 @@
 <script>
+    import SpeedMeter from '$lib/components/SpeedMeter.svelte';
   class Particle {
     constructor(x, y, dirInRadians) {
       this.x = x;
@@ -21,6 +22,9 @@
   let temperatureKelvin = $state(298);
   let particleCount = $state(10);
   let hitCount = $state(0);
+  let hitsPerSecond = $state(0);
+  let lastThreeSeconds = $state([]);
+  let averageHits = $state(0);
 
   /** @type {HTMLCanvasElement} */
   /** @type {Array<Particle>} */
@@ -29,6 +33,12 @@
   let particleHits = [];
   let canvas = $state();
   setInterval(drawCanvas, 10);
+  setInterval(() => {
+    lastThreeSeconds.push(hitsPerSecond);
+    if (lastThreeSeconds.length > 3) lastThreeSeconds.shift();
+    averageHits = lastThreeSeconds.length === 0 ? 0 : Math.round((lastThreeSeconds.reduce((a, b) => a + b, 0) / lastThreeSeconds.length) * 10) / 10;
+    hitsPerSecond = 0;
+  }, 1000);
   let particleSpeed = $derived(Math.sqrt(temperatureKelvin) * 0.15);
   const particleRadius = 5;
   /** @type {CanvasRenderingContext2D} */
@@ -59,6 +69,9 @@
     particleCount = 20;
     alreadySetup = true;
     hitCount = 0;
+    hitsPerSecond = 0;
+    lastThreeSeconds = [];
+    averageHits = 0;
     ctx = canvas.getContext("2d");
   }
 
@@ -99,6 +112,7 @@
     ) {
       p.dirInRadians *= -1;
       hitCount += 1;
+      hitsPerSecond += 1;
     }
 
     if (p.x > canvas.width) {
@@ -111,6 +125,7 @@
     ) {
       p.dirInRadians = Math.PI - p.dirInRadians;
       hitCount += 1;
+      hitsPerSecond += 1;
     }
 
     if (p.x + dx + particleRadius > canvas.width) {
@@ -140,6 +155,8 @@
 
 <button onclick={setup}>Reset</button>
 <p>{hitCount} hits</p>
+<p>{averageHits} average hits per second</p>
+<SpeedMeter value={averageHits} max={1000} label="Hits/Sec" />
 <input
   type="range"
   min="0"
