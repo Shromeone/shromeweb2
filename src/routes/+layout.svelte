@@ -15,6 +15,7 @@
   <!-- <a href="/cart-quantity">Cart quantity</a> -->
   <!-- <a href="/todo-list">Todo List</a> -->
   <a href="/typing">打字練習</a>
+  <a href="/cangjie-practice">倉頡字碼練習</a>
   <a href="/text-replacer">Text Replacer</a>
   <a href="/mark-6-generator">六合彩神器</a>
   <a href="/gas">Testing</a>
