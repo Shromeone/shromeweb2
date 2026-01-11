@@ -77,7 +77,34 @@
 
 <h2>六合彩神器</h2>
 <div class="gen-btn-div">
+
   <button class="gen-btn" onclick={generateNumbers}>發發發！</button>
+
+
+<style>
+.gen-btn {
+  padding: 40px;
+  border-radius: 30px;
+  background: linear-gradient(to bottom, #f7b34d, #e6a23c);
+  color: white;
+  font-weight: italic;
+  font-size: 4rem;
+  border: 2px solid #d4a574;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.gen-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.gen-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+</style>
 </div>
 <p>中獎號碼：</p>
 <div class="nums">
@@ -117,7 +144,6 @@
   .gen-btn {
     width: 40%;
     height: 100%;
-    font-size: 1rem;
   }
 
   h2 {
