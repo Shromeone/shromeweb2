@@ -104,17 +104,19 @@
       nextNextQuestion = nextNextQ;
       nextNextCode = nextNextC;
       nextNextMode = nextNextM;
-      userInput = '';
       feedback = '';
       feedbackClass = '';
       animate = false;
     }, 200);
+    setTimeout(() => {
+    handleInput();
+    }, 240);
   }
 
   function checkInput() {
     const correctAnswer = currentCode;
     if (userInput.toUpperCase() === correctAnswer) {
-      // feedback = '正確！';
+      userInput = '';
       feedbackClass = 'correct';
       animateQuestions();
     } else {
@@ -125,8 +127,9 @@
   }
 
   function handleInput() {
+    if (animate) return;
     const requiredLength = selectedMode === 'radical' ? 2 : 1;
-    if (userInput.length === requiredLength) {
+    if (userInput.length >= requiredLength) {
       checkInput();
     }
   }
