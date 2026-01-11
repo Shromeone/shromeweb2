@@ -47,6 +47,7 @@
   let searchMode = $state(false);
 
   let isCompo = $state(false);
+  let justComposed = $state(false);
   let timeLimit = $state(60);
   let fontSelect = $state("LXGW WenKai TC");
 
@@ -237,9 +238,25 @@
   }
 
   function halfInput(e) {
-    if (e.inputType === "deleteContentBackward") return;
+    if (e.inputType === "deleteContentBackward") {
+      // If deleting during composition, don't process it
+      // Let the IME handle the deletion of composing characters
+      if (isCompo) {
+        return;
+      }
+      return;
+    }
     if (e.inputType === "insertCompositionText") {
       typeCancelled = false;
+      return;
+    }
+
+    // Skip processing if we just handled a composition end
+    // This prevents duplicate character registration on Mac
+    if (justComposed) {
+      justComposed = false;
+      isCompo = false;
+      setTimeout(clearInput, 0);
       return;
     }
 
@@ -366,7 +383,12 @@
     if (gameState !== GameState.PLAY) return;
     if (!e.data) return;
     searchMode = false; // Disable search mode when typing
+    justComposed = true; // Set flag to prevent halfInput from processing the same character
     validateInput(e.data);
+    // Reset the flag after a short delay to allow halfInput to skip processing
+    setTimeout(() => {
+      justComposed = false;
+    }, 100);
   }
 
   function restart() {
