@@ -51,6 +51,7 @@
   let compositionData = $state("");
   let lastProcessedInput = $state("");
   let compositionStartTime = $state(0);
+  let compositionBackspaceLock = false;
   let timeLimit = $state(60);
   let fontSelect = $state("LXGW WenKai TC");
 
@@ -183,11 +184,14 @@
   }
 
   function compoStart(e) {
-    isCompo = true;
-    compositionData = e.data || "";
-    compositionStartTime = Date.now();
-    lastProcessedInput = ""; // Reset when starting new composition
-  }
+  isCompo = true;
+  compositionData = e.data || "";
+  compositionStartTime = Date.now();
+  lastProcessedInput = "";
+
+  // 🔒 Prevent committed-character deletion during composition
+  compositionBackspaceLock = true;
+}
 
   async function compoUpdate(e) {
     isCompo = true;
@@ -233,36 +237,26 @@
   }
 
   function keyDown(e) {
-    typeCancelled = false;
-    if (e.key !== "Enter" && e.key !== "Escape" && !e.ctrlKey && !e.metaKey) {
-      searchMode = false; // Disable search mode when any character is typed
+  typeCancelled = false;
+
+  if (e.key !== "Enter" && e.key !== "Escape" && !e.ctrlKey && !e.metaKey) {
+    searchMode = false;
+  }
+
+  if (e.key === "Backspace") {
+
+    // ✅ HARD STOP: Never delete committed characters
+    // if this Backspace is part of IME composition
+    if (isCompo || compositionBackspaceLock) {
+      return;
     }
-    if (e.key === "Backspace") {
-      // On Mac, when deleting during composition, we need to be more careful
-      // Check if we're actively composing or if input has uncommitted text
-      if (isCompo) {
-        // Actively composing - let IME handle it
-        return;
-      }
-      
-      // Check if input has value that might be composition text
-      // On Mac, the input value might still contain composition text even if isCompo is false
-      // due to timing issues
-      if (inputBox && inputBox.value && inputBox.value.length > 0) {
-        // Check if this is recent composition (within last 200ms) or if input matches composition data
-        const timeSinceComposition = Date.now() - compositionStartTime;
-        if (timeSinceComposition < 200 || inputBox.value === compositionData) {
-          // Likely still in composition or just finished - don't delete previous character
-          return;
-        }
-      }
-      
-      // Only delete previous character if not composing and input is empty or committed
-      if (!isCompo && (!inputBox || !inputBox.value || inputBox.value.length === 0)) {
-        tryDelete();
-      }
+
+    // ✅ Safe to delete only when fully idle
+    if (!inputBox?.value) {
+      tryDelete();
     }
   }
+}
 
   function halfInput(e) {
     // Handle different input types
@@ -434,43 +428,41 @@
   }
 
   async function compoEnd(e) {
-    isCompo = false;
-    
-    if (gameState !== GameState.PLAY) {
-      compositionData = "";
-      return;
-    }
-    
-    if (!e.data) {
-      // Composition was cancelled or cleared
-      compositionData = "";
-      return;
-    }
-    
-    // Store the data we're about to process
-    const dataToProcess = e.data;
-    
-    // Check if this is a duplicate (already processed)
-    if (dataToProcess === lastProcessedInput) {
-      compositionData = "";
-      return;
-    }
-    
-    searchMode = false; // Disable search mode when typing
-    justComposed = true; // Set flag to prevent halfInput from processing the same character
-    lastProcessedInput = dataToProcess; // Mark as processed
-    
-    // Process the character
-    validateInput(dataToProcess);
-    
-    // Reset composition data after processing
+  isCompo = false;
+
+  // ✅ Keep lock briefly to absorb Mac's delayed Backspace events
+  setTimeout(() => {
+    compositionBackspaceLock = false;
+  }, 200);
+
+  if (gameState !== GameState.PLAY) {
     compositionData = "";
-    
-    // Reset the flag after a delay to allow halfInput to skip processing if it fires
-    setTimeout(() => {
-      justComposed = false;
-    }, 150);
+    return;
   }
+
+  if (!e.data) {
+    compositionData = "";
+    return;
+  }
+
+  const dataToProcess = e.data;
+
+  if (dataToProcess === lastProcessedInput) {
+    compositionData = "";
+    return;
+  }
+
+  searchMode = false;
+  justComposed = true;
+  lastProcessedInput = dataToProcess;
+
+  validateInput(dataToProcess);
+  compositionData = "";
+
+  setTimeout(() => {
+    justComposed = false;
+  }, 150);
+}
 
   function restart() {
     gameState = GameState.START;
