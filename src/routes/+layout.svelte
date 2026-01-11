@@ -21,6 +21,10 @@
 </nav>
 {@render children?.()}
 
+<footer class="version-footer">
+  <p>v1.0.0</p>
+</footer>
+
 <style>
   nav {
     width: 100%;
@@ -30,5 +34,21 @@
   a {
     font-family: Verdana;
     color: white;
+  }
+
+  .version-footer {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    padding: 10px;
+    background-color: transparent;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.875rem;
+    z-index: 100;
+  }
+
+  .version-footer p {
+    margin: 0;
+    font-family: Verdana;
   }
 </style>

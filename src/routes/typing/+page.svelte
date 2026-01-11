@@ -48,6 +48,7 @@
 
   let isCompo = $state(false);
   let justComposed = $state(false);
+  let compositionData = $state("");
   let timeLimit = $state(60);
   let fontSelect = $state("LXGW WenKai TC");
 
@@ -180,10 +181,12 @@
 
   function compoStart(e) {
     isCompo = true;
+    compositionData = e.data || "";
   }
 
   async function compoUpdate(e) {
     isCompo = true;
+    compositionData = e.data || "";
   }
 
   function finishGame() {
@@ -231,6 +234,13 @@
     }
     if (e.key === "Backspace") {
       // Don't delete previous character if currently composing (IME composition)
+      // Also prevent deletion if input has any value (might be composition text being deleted)
+      // This prevents deleting previous character when deleting the first composing character
+      if (isCompo || (inputBox && inputBox.value && inputBox.value.length > 0)) {
+        // Let the IME handle the deletion, don't delete previous character
+        return;
+      }
+      // Only delete previous character if not composing and input is empty
       if (!isCompo) {
         tryDelete();
       }
@@ -241,7 +251,13 @@
     if (e.inputType === "deleteContentBackward") {
       // If deleting during composition, don't process it
       // Let the IME handle the deletion of composing characters
-      if (isCompo) {
+      // Also prevent deletion if composition data is short (first character deletion)
+      if (isCompo || compositionData.length <= 1) {
+        // Reset composition data if composition is being cleared
+        if (inputBox && inputBox.value === "") {
+          compositionData = "";
+          isCompo = false;
+        }
         return;
       }
       return;
@@ -380,6 +396,7 @@
 
   async function compoEnd(e) {
     isCompo = false;
+    compositionData = "";
     if (gameState !== GameState.PLAY) return;
     if (!e.data) return;
     searchMode = false; // Disable search mode when typing
