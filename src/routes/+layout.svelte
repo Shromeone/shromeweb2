@@ -22,7 +22,7 @@
 {@render children?.()}
 
 <footer class="version-footer">
-  <p>v1.0.0</p>
+  <p>v1.0.1</p>
 </footer>
 
 <style>

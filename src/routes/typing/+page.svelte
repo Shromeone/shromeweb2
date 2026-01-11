@@ -49,6 +49,8 @@
   let isCompo = $state(false);
   let justComposed = $state(false);
   let compositionData = $state("");
+  let lastProcessedInput = $state("");
+  let compositionStartTime = $state(0);
   let timeLimit = $state(60);
   let fontSelect = $state("LXGW WenKai TC");
 
@@ -108,6 +110,7 @@
     // console.log("cleared input");
     inputBox.innerHTML = "";
     input = "";
+    // Don't reset lastProcessedInput here - it should persist across input clears
   }
   function adjustHintsPosition(event) {
     const charElement = event.currentTarget;
@@ -182,6 +185,8 @@
   function compoStart(e) {
     isCompo = true;
     compositionData = e.data || "";
+    compositionStartTime = Date.now();
+    lastProcessedInput = ""; // Reset when starting new composition
   }
 
   async function compoUpdate(e) {
@@ -233,35 +238,52 @@
       searchMode = false; // Disable search mode when any character is typed
     }
     if (e.key === "Backspace") {
-      // Don't delete previous character if currently composing (IME composition)
-      // Also prevent deletion if input has any value (might be composition text being deleted)
-      // This prevents deleting previous character when deleting the first composing character
-      if (isCompo || (inputBox && inputBox.value && inputBox.value.length > 0)) {
-        // Let the IME handle the deletion, don't delete previous character
+      // On Mac, when deleting during composition, we need to be more careful
+      // Check if we're actively composing or if input has uncommitted text
+      if (isCompo) {
+        // Actively composing - let IME handle it
         return;
       }
-      // Only delete previous character if not composing and input is empty
-      if (!isCompo) {
+      
+      // Check if input has value that might be composition text
+      // On Mac, the input value might still contain composition text even if isCompo is false
+      // due to timing issues
+      if (inputBox && inputBox.value && inputBox.value.length > 0) {
+        // Check if this is recent composition (within last 200ms) or if input matches composition data
+        const timeSinceComposition = Date.now() - compositionStartTime;
+        if (timeSinceComposition < 200 || inputBox.value === compositionData) {
+          // Likely still in composition or just finished - don't delete previous character
+          return;
+        }
+      }
+      
+      // Only delete previous character if not composing and input is empty or committed
+      if (!isCompo && (!inputBox || !inputBox.value || inputBox.value.length === 0)) {
         tryDelete();
       }
     }
   }
 
   function halfInput(e) {
+    // Handle different input types
     if (e.inputType === "deleteContentBackward") {
       // If deleting during composition, don't process it
       // Let the IME handle the deletion of composing characters
-      // Also prevent deletion if composition data is short (first character deletion)
-      if (isCompo || compositionData.length <= 1) {
-        // Reset composition data if composition is being cleared
-        if (inputBox && inputBox.value === "") {
-          compositionData = "";
-          isCompo = false;
+      if (isCompo) {
+        // Update composition data if available
+        if (inputBox) {
+          compositionData = inputBox.value || "";
         }
+        return;
+      }
+      // If we just finished composition (within 200ms), don't process deletion
+      const timeSinceComposition = Date.now() - compositionStartTime;
+      if (timeSinceComposition < 200) {
         return;
       }
       return;
     }
+    
     if (e.inputType === "insertCompositionText") {
       typeCancelled = false;
       return;
@@ -269,17 +291,34 @@
 
     // Skip processing if we just handled a composition end
     // This prevents duplicate character registration on Mac
+    // Check both the flag and if the data matches what we just processed
     if (justComposed) {
+      // Double check: if the input data matches what we just processed, skip it
+      if (!e.data || e.data === lastProcessedInput) {
+        justComposed = false;
+        isCompo = false;
+        setTimeout(clearInput, 0);
+        return;
+      }
+      // If data is different, it's a new input, reset the flag
       justComposed = false;
-      isCompo = false;
+    }
+
+    // Don't process if this input was already processed (duplicate prevention)
+    if (e.data && e.data === lastProcessedInput) {
       setTimeout(clearInput, 0);
       return;
     }
 
     isCompo = false;
     searchMode = false; // Disable search mode when typing
-    validateInput(e.data);
-    // console.log(e.inputType);
+    
+    // Only process if we have data and it's not a duplicate
+    if (e.data && e.data !== lastProcessedInput) {
+      lastProcessedInput = e.data;
+      validateInput(e.data);
+    }
+    
     setTimeout(clearInput, 0);
   }
 
@@ -396,16 +435,41 @@
 
   async function compoEnd(e) {
     isCompo = false;
-    compositionData = "";
-    if (gameState !== GameState.PLAY) return;
-    if (!e.data) return;
+    
+    if (gameState !== GameState.PLAY) {
+      compositionData = "";
+      return;
+    }
+    
+    if (!e.data) {
+      // Composition was cancelled or cleared
+      compositionData = "";
+      return;
+    }
+    
+    // Store the data we're about to process
+    const dataToProcess = e.data;
+    
+    // Check if this is a duplicate (already processed)
+    if (dataToProcess === lastProcessedInput) {
+      compositionData = "";
+      return;
+    }
+    
     searchMode = false; // Disable search mode when typing
     justComposed = true; // Set flag to prevent halfInput from processing the same character
-    validateInput(e.data);
-    // Reset the flag after a short delay to allow halfInput to skip processing
+    lastProcessedInput = dataToProcess; // Mark as processed
+    
+    // Process the character
+    validateInput(dataToProcess);
+    
+    // Reset composition data after processing
+    compositionData = "";
+    
+    // Reset the flag after a delay to allow halfInput to skip processing if it fires
     setTimeout(() => {
       justComposed = false;
-    }, 100);
+    }, 150);
   }
 
   function restart() {
@@ -416,6 +480,11 @@
     currentWordIndex = 0;
     // input = "";
     clearInput();
+    lastProcessedInput = ""; // Reset on restart
+    isCompo = false;
+    compositionData = "";
+    justComposed = false;
+    compositionStartTime = 0;
     inputBox.focus();
     clearInterval(updateTimerInterval);
     clearInterval(updateInfoInterval);
