@@ -80,6 +80,14 @@
     if (removeContentSpace) content = content.replace(/\s/g, "");
     updateInputBoxPos();
     inputBox.focus();
+    document.onclick = (e) => {
+tryPressEnterFocus(e);
+      if (document.activeElement === inputBox) return;
+      if (document.activeElement === typePrep) return;
+      if (settingsOpen) return;
+      e.preventDefault();
+      console.log("focused");
+      inputBox.focus();};
     document.onkeydown = (e) => {
       tryPressEnterFocus(e);
       if (document.activeElement === inputBox) return;
@@ -541,10 +549,11 @@
       <p>分數: {points}</p>
     {/if}
   </div>
+  <div id="start-partition"></div>
   <input
     type="text"
     id="type-input"
-    placeholder={gameState === GameState.PLAY ? "" : "在這裡開始打字"}
+    placeholder={gameState === GameState.PLAY ? "" : ""}
     oncompositionupdate={compoUpdate}
     oncompositionstart={compoStart}
     oncompositionend={compoEnd}
@@ -734,6 +743,8 @@
 </div>
 
 <style>
+  #start-partition {
+    height: 25vh;}
   .passage-select,
   .time-select {
     display: flex;
@@ -897,8 +908,8 @@
     position: absolute;
     color: white;
     left: 0;
-    font-size: 1rem;
-    height: 2rem;
+    font-size: 3rem;
+    height: 5rem;
     background-color: transparent;
     border: none;
     overflow: hidden;
