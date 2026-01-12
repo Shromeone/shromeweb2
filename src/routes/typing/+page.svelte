@@ -868,10 +868,10 @@
     display: inline-block;
     font-family: var(--char-font);
     /* font-family: ""; */
-    font-size: max(18px, 2.3vw);
+    font-size: max(18px, 3.5vh);
     margin: max(4px, 0.3vw);
-    width: max(20px, 2.6vw);
-    height: max(20px, 2.6w);
+    width: max(20px, 4vh);
+    height: max(20px, 4vh);
     /* border: 1px solid rgba(255, 255, 255, 0.416); */
     text-align: center;
     vertical-align: middle;

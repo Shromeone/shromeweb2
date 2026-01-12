@@ -151,35 +151,156 @@
   }
 </script>
 
-<canvas bind:this={canvas} width={volume} , height="420"></canvas>
+<div class="container">
+  <canvas bind:this={canvas} width={volume} height="420"></canvas>
 
-<button onclick={setup}>Reset</button>
-<p>{hitCount} hits</p>
-<p>{averageHits} average hits per second</p>
-<SpeedMeter value={averageHits} max={1000} label="Hits/Sec" />
-<input
-  type="range"
-  min="0"
-  max="1500"
-  bind:value={temperatureKelvin}
-  class="slider"
-/>
-<span>{temperatureKelvin - 273}°C / {temperatureKelvin}°K</span>
+  <div class="controls">
+    <div class="control-row">
+      <button onclick={setup}>Reset</button>
+      <p>{hitCount} hits</p>
+      <p>{averageHits} average hits per second</p>
+    </div>
 
-<input
-  type="range"
-  min="0"
-  max="500"
-  bind:value={particleCount}
-  class="slider"
-/>
-<span>{particleCount} particle{particleCount > 1 ? "s" : ""}</span>
+    <div class="speed-meter-container">
+      <SpeedMeter value={averageHits} max={1000} label="Hits/Sec" />
+    </div>
 
-<input type="range" min="30" max="2000" bind:value={volume} class="slider" />
-<span>{volume}cm³</span>
+    <div class="slider-group">
+      <div class="slider-item">
+        <label>Temperature:</label>
+        <input
+          type="range"
+          min="0"
+          max="1500"
+          bind:value={temperatureKelvin}
+          class="slider"
+        />
+        <span>{temperatureKelvin - 273}°C / {temperatureKelvin}°K</span>
+      </div>
+
+      <div class="slider-item">
+        <label>Particles:</label>
+        <input
+          type="range"
+          min="0"
+          max="500"
+          bind:value={particleCount}
+          class="slider"
+        />
+        <span>{particleCount} particle{particleCount > 1 ? "s" : ""}</span>
+      </div>
+
+      <div class="slider-item">
+        <label>Volume:</label>
+        <input type="range" min="30" max="2000" bind:value={volume} class="slider" />
+        <span>{volume}cm³</span>
+      </div>
+    </div>
+  </div>
+</div>
 
 <style>
+  .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    box-sizing: border-box;
+  }
+
   canvas {
     background: var(--dark);
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+  }
+
+  .controls {
+    width: 100%;
+    max-width: 800px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .control-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .speed-meter-container {
+    display: flex;
+    justify-content: center;
+  }
+
+  .slider-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .slider-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .slider-item label {
+    font-weight: bold;
+    color: var(--light);
+  }
+
+  .slider-item span {
+    color: var(--light);
+    font-size: 0.9rem;
+  }
+
+  /* Mobile styles */
+  @media (max-width: 768px) {
+    .container {
+      padding: 0.5rem;
+      gap: 0.5rem;
+    }
+
+    .control-row {
+      gap: 0.5rem;
+    }
+
+    .slider-group {
+      gap: 0.5rem;
+    }
+
+    .slider-item {
+      gap: 0.25rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .container {
+      padding: 0.25rem;
+      gap: 0.25rem;
+    }
+
+    canvas {
+      max-height: 50vh;
+    }
+
+    .control-row {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.25rem;
+    }
+
+    .control-row p {
+      text-align: center;
+      margin: 0;
+    }
+
+    .slider-item span {
+      font-size: 0.8rem;
+    }
   }
 </style>

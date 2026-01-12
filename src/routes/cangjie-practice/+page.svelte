@@ -191,7 +191,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 5rem;
+    height: 5vw;
     margin: 40px 0;
     /* overflow: hidden; */
   }
@@ -209,54 +209,54 @@
   }
 
   .question.previous {
-    transform: translateX(-6rem);
+    transform: translateX(-6vw);
     color: grey;
-    font-size: 3rem;
+    font-size: 3vw;
   }
 
   .question.current {
     transform: translateX(0);
-    font-size: 5rem;
+    font-size: 5vw;
   }
 
   .question.next {
-    transform: translateX(6rem);
+    transform: translateX(6vw);
     color: grey;
-    font-size: 3rem;
+    font-size: 3vw;
     opacity: 1;
   }
 
   .question-container.animate .current {
-    transform: translateX(-6rem);
+    transform: translateX(-6vw);
     color: grey;
-    font-size: 3rem;
+    font-size: 3vw;
   }
 
   .question-container.animate .next {
     transform: translateX(0);
     color: white;
-    font-size: 5rem;
+    font-size: 5vw;
     opacity: 1;
   }
 
   .question-container.animate .previous {
-    transform: translateX(-10rem);
-    font-size: 1rem;
+    transform: translateX(-10vw);
+    font-size: 1vw;
     opacity: 0;
 
   }
 
   .question.next-next {
-    transform: translateX(6rem);
+    transform: translateX(6vw);
     color: grey;
-    font-size: 1rem;
+    font-size: 1vw;
     opacity: 0;
   }
 
   .question-container.animate .next-next {
-    transform: translateX(6rem);
+    transform: translateX(6vw);
     color: grey;
-    font-size: 3rem;
+    font-size: 3vw;
     opacity: 1;
   }
 
@@ -294,5 +294,50 @@
 
   .mode-checkboxes label {
     margin: 5px 0;
+  }
+
+  /* Mobile responsive styles */
+  @media (max-width: 768px) {
+    .question-container {
+      height: 20vw;
+    }
+
+    .question.previous {
+      transform: translateX(-20vw);
+      font-size: 10vw;
+    }
+
+    .question.current {
+      font-size: 20vw;
+    }
+
+    .question.next {
+      transform: translateX(20vw);
+      font-size: 10vw;
+    }
+
+    .question-container.animate .current {
+      transform: translateX(-20vw);
+      font-size: 10vw;
+    }
+
+    .question-container.animate .next {
+      font-size: 20vw;
+    }
+
+    .question-container.animate .previous {
+      transform: translateX(-30vw);
+      font-size: 5vw;
+    }
+
+    .question.next-next {
+      transform: translateX(20vw);
+      font-size: 5vw;
+    }
+
+    .question-container.animate .next-next {
+      transform: translateX(20vw);
+      font-size: 10vw;
+    }
   }
 </style>

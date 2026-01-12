@@ -137,8 +137,10 @@ const needleAngle = Math.PI * (1 - normalizedValue);
 
 <style>
     canvas {
-        width: 300px;
-        height: 200px;
+        width: 100%;
+        max-width: 300px;
+        height: auto;
+        aspect-ratio: 3 / 2;
         background: transparent;
         border-radius: 10px;
     }
