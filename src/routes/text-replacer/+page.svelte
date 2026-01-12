@@ -111,24 +111,28 @@
 <h2>Remove, Replace, Modify customly selected words.</h2>
 <div class="horizontal">
   <div class="input-output">
-    <p>Input</p>
-    <textarea
-      class="content"
-      name="content"
-      rows="10"
-      placeholder="Enter the text that you want to replace here"
-      bind:value={textToReplace}
-      oninput={updateResult}
-      onchange={updateResult}
-    ></textarea>
-    <button onclick={pasteFromClipboard} class="paste-btn"
-      >Paste from Clipboard</button
-    >
-    <p>Output</p>
-    <div class="result">
-      <div class="result-text">{result}</div>
+    <div class="input-section">
+      <p>Input</p>
+      <textarea
+        class="content"
+        name="content"
+        rows="10"
+        placeholder="Enter the text that you want to replace here"
+        bind:value={textToReplace}
+        oninput={updateResult}
+        onchange={updateResult}
+      ></textarea>
+      <button onclick={pasteFromClipboard} class="paste-btn"
+        >Paste from Clipboard</button
+      >
     </div>
-    <button onclick={copyResult} class="copy-btn">Copy Result</button>
+    <div class="output-section">
+      <p>Output</p>
+      <div class="result">
+        <div class="result-text">{result}</div>
+      </div>
+      <button onclick={copyResult} class="copy-btn">Copy Result</button>
+    </div>
   </div>
   <div class="options">
     <div class="fields">
@@ -225,12 +229,15 @@
 
   .input-output textarea {
     width: 100%;
+    height: 12rem;
+    resize: vertical;
   }
 
   .quick-options {
     display: flex;
     gap: 1rem;
     width: 100%;
+    flex-wrap: wrap;
   }
 
   .options {
@@ -271,5 +278,32 @@
   .copy-btn:active,
   .paste-btn:active {
     opacity: 80%;
+  }
+
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Mobile layout */
+  @media (max-width: 768px) {
+    .horizontal {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .input-output {
+      display: flex;
+      gap: 1rem;
+      width: 100%;
+    }
+
+    .input-output > * {
+      flex: 1;
+    }
+
+    .options {
+      width: 100%;
+    }
   }
 </style>

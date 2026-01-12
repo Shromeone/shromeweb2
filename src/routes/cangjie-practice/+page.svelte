@@ -296,6 +296,10 @@
     margin: 5px 0;
   }
 
+  body {
+    overflow-x: hidden;
+  }
+
   /* Mobile responsive styles */
   @media (max-width: 768px) {
     .question-container {

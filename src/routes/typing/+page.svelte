@@ -831,12 +831,14 @@
     padding: 0;
     margin: 0;
     /* background-color: black; */
+    overflow-x: hidden;
   }
 
   .background {
     background-color: transparent;
     min-height: 100vh;
     width: 100%;
+    overflow-x: hidden;
   }
 
   .info-bar {
@@ -1013,6 +1015,43 @@
     background-color: rgba(91, 97, 148, 1);
     border-color: rgba(255, 255, 255, 0.8);
     opacity: 80%;
+  }
+
+  /* Mobile styles for bottom buttons */
+  @media (max-width: 768px) {
+    .bottom-left-buttons {
+      bottom: 10px;
+      left: 10px;
+      gap: 5px;
+    }
+
+    .search-mode-btn {
+      padding: 0.6em 1.2em;
+      font-size: 0.9rem;
+    }
+
+    .bottom-btn {
+      padding: 0.6em 1.2em;
+      font-size: 0.9rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .bottom-left-buttons {
+      bottom: 5px;
+      left: 5px;
+      gap: 3px;
+    }
+
+    .search-mode-btn {
+      padding: 0.5em 1em;
+      font-size: 0.8rem;
+    }
+
+    .bottom-btn {
+      padding: 0.5em 1em;
+      font-size: 0.8rem;
+    }
   }
   .hints-container {
     display: flex;
