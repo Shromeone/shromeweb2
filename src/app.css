@@ -46,8 +46,9 @@ button {
     --secondary-color: yellow;
 }
 
-/* Mobile responsive styles */
-@media (max-width: 768px) {
+/* Mobile responsive styles - using aspect ratio detection */
+@media (max-aspect-ratio: 1/1) and (max-width: 768px) {
+    /* Portrait mobile */
     body {
         font-size: 0.9rem;
     }
@@ -67,7 +68,29 @@ button {
     }
 }
 
-@media (max-width: 480px) {
+@media (min-aspect-ratio: 1/1) and (max-width: 896px) and (max-height: 414px) {
+    /* Landscape mobile */
+    body {
+        font-size: 0.9rem;
+    }
+
+    p {
+        font-size: 0.9rem;
+    }
+
+    button {
+        font-size: 0.9rem;
+        padding: 0.4rem 0.8rem;
+    }
+
+    input, textarea {
+        font-size: 0.9rem;
+        padding: 0.4rem;
+    }
+}
+
+@media (max-aspect-ratio: 0.6/1) and (max-width: 480px) {
+    /* Very narrow portrait mobile (tall phones) */
     body {
         font-size: 0.8rem;
     }

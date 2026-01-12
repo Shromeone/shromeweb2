@@ -1017,8 +1017,9 @@
     opacity: 80%;
   }
 
-  /* Mobile styles for bottom buttons */
-  @media (max-width: 768px) {
+  /* Mobile styles for bottom buttons - using aspect ratio */
+  @media (max-aspect-ratio: 1/1) and (max-width: 768px) {
+    /* Portrait mobile */
     .bottom-left-buttons {
       bottom: 10px;
       left: 10px;
@@ -1036,7 +1037,27 @@
     }
   }
 
-  @media (max-width: 480px) {
+  @media (min-aspect-ratio: 1/1) and (max-width: 896px) and (max-height: 414px) {
+    /* Landscape mobile */
+    .bottom-left-buttons {
+      bottom: 10px;
+      left: 10px;
+      gap: 5px;
+    }
+
+    .search-mode-btn {
+      padding: 0.6em 1.2em;
+      font-size: 0.9rem;
+    }
+
+    .bottom-btn {
+      padding: 0.6em 1.2em;
+      font-size: 0.9rem;
+    }
+  }
+
+  @media (max-aspect-ratio: 0.6/1) and (max-width: 480px) {
+    /* Very narrow portrait mobile */
     .bottom-left-buttons {
       bottom: 5px;
       left: 5px;

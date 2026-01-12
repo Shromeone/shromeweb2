@@ -300,8 +300,9 @@
     overflow-x: hidden;
   }
 
-  /* Mobile responsive styles */
-  @media (max-width: 768px) {
+  /* Mobile responsive styles - using aspect ratio */
+  @media (max-aspect-ratio: 1/1) and (max-width: 768px),
+         (min-aspect-ratio: 1/1) and (max-width: 896px) and (max-height: 414px) {
     .question-container {
       height: 20vw;
     }

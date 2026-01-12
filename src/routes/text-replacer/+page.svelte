@@ -284,8 +284,8 @@
     overflow-x: hidden;
   }
 
-  /* Mobile layout */
-  @media (max-width: 768px) {
+  /* Mobile layout - using aspect ratio */
+  @media (max-aspect-ratio: 1/1) {
     .horizontal {
       display: flex;
       flex-direction: column;
