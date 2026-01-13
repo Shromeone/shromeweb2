@@ -1,0 +1,437 @@
+[
+  {
+    "code": "PH",
+    "character": "必",
+    "category": ["two"]
+  },
+  {
+    "code": "SU",
+    "character": "己",
+    "category": ["two"]
+  },
+  {
+    "code": "A",
+    "character": "日",
+    "category": ["basic"]
+  },
+  {
+    "code": "B",
+    "character": "月",
+    "category": ["basic"]
+  },
+  {
+    "code": "C",
+    "character": "金",
+    "category": ["basic"]
+  },
+  {
+    "code": "D",
+    "character": "木",
+    "category": ["basic"]
+  },
+  {
+    "code": "E",
+    "character": "水",
+    "category": ["basic"]
+  },
+  {
+    "code": "F",
+    "character": "火",
+    "category": ["basic"]
+  },
+  {
+    "code": "G",
+    "character": "土",
+    "category": ["basic"]
+  },
+  {
+    "code": "H",
+    "character": "竹",
+    "category": ["basic"]
+  },
+  {
+    "code": "I",
+    "character": "戈",
+    "category": ["basic"]
+  },
+  {
+    "code": "J",
+    "character": "十",
+    "category": ["basic"]
+  },
+  {
+    "code": "K",
+    "character": "大",
+    "category": ["basic"]
+  },
+  {
+    "code": "L",
+    "character": "中",
+    "category": ["basic"]
+  },
+  {
+    "code": "M",
+    "character": "一",
+    "category": ["basic"]
+  },
+  {
+    "code": "N",
+    "character": "弓",
+    "category": ["basic"]
+  },
+  {
+    "code": "O",
+    "character": "人",
+    "category": ["basic"]
+  },
+  {
+    "code": "P",
+    "character": "心",
+    "category": ["basic"]
+  },
+  {
+    "code": "Q",
+    "character": "手",
+    "category": ["basic"]
+  },
+  {
+    "code": "R",
+    "character": "口",
+    "category": ["basic"]
+  },
+  {
+    "code": "S",
+    "character": "尸",
+    "category": ["basic"]
+  },
+  {
+    "code": "T",
+    "character": "廿",
+    "category": ["basic"]
+  },
+  {
+    "code": "U",
+    "character": "山",
+    "category": ["basic"]
+  },
+  {
+    "code": "V",
+    "character": "女",
+    "category": ["basic"]
+  },
+  {
+    "code": "W",
+    "character": "田",
+    "category": ["basic"]
+  },
+  {
+    "code": "X",
+    "character": "難",
+    "category": ["basic"]
+  },
+  {
+    "code": "Y",
+    "character": "卜",
+    "category": ["basic"]
+  },
+  {
+    "code": "Z",
+    "character": "重",
+    "category": ["basic"]
+  },
+  {
+    "code": "IM",
+    "character": "冫",
+    "category": ["radical"]
+  },
+  {
+    "code": "NL",
+    "character": "阝",
+    "category": ["radical"]
+  },
+  {
+    "code": "A",
+    "character": "曰",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "B",
+    "character": "冂",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "B",
+    "character": "爫",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "C",
+    "character": "八",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "C",
+    "character": "丷",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "E",
+    "character": "氵",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "F",
+    "character": "火",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "F",
+    "character": "灬",
+    "category": ["auxiliary", "radical"]
+  },
+  {
+    "code": "G",
+    "character": "士",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "H",
+    "character": "⺮",
+    "category": ["auxiliary", "radical"]
+  },
+  {
+    "code": "H",
+    "character": "丿",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "H",
+    "character": "𠂆",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "HU",
+    "character": "儿",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "I",
+    "character": "丶",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "IP",
+    "character": "弋",
+    "category": ["radical"]
+  },
+  {
+    "code": "J",
+    "character": "宀",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "J",
+    "character": "十",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "K",
+    "character": "ㄨ",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "K",
+    "character": "大",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "L",
+    "character": "中",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "L",
+    "character": "丨",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "L",
+    "character": "衤",
+    "category": ["auxiliary", "radical"]
+  },
+  {
+    "code": "M",
+    "character": "一",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "M",
+    "character": "厂",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "M",
+    "character": "丆",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "N",
+    "character": "⺈",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "N",
+    "character": "亅",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "N",
+    "character": "弓",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "NU",
+    "character": "乙",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "O",
+    "character": "𠂉",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "O",
+    "character": "人",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "O",
+    "character": "亻",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "O",
+    "character": "入",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "P",
+    "character": "心",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "P",
+    "character": "忄",
+    "category": ["auxiliary", "radical"]
+  },
+  {
+    "code": "P",
+    "character": "匕",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "Q",
+    "character": "手",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "Q",
+    "character": "扌",
+    "category": ["auxiliary", "radical"]
+  },
+  {
+    "code": "R",
+    "character": "口",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "S",
+    "character": "尸",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "S",
+    "character": "匚",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "T",
+    "character": "艹",
+    "category": ["auxiliary", "radical"]
+  },
+  {
+    "code": "T",
+    "character": "卄",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "T",
+    "character": "廾",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "U",
+    "character": "凵",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "VI",
+    "character": "厶",
+    "category": ["radical"]
+  },
+  {
+    "code": "VF",
+    "character": "糹",
+    "category": ["radical"]
+  },
+  {
+    "code": "W",
+    "character": "毌",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "Y",
+    "character": "亠",
+    "category": ["auxiliary"]
+  },
+  {
+    "code": "SL",
+    "character": "卩",
+    "category": ["radical"]
+  },
+  {
+    "code": "IF",
+    "character": "⺬",
+    "category": ["radical"]
+  },
+  {
+    "code": "PD",
+    "character": "也",
+    "category": ["two"]
+  },
+  {
+    "code": "AN",
+    "character": "門",
+    "category": ["two", "radical"]
+  },
+  {
+    "code": "HI",
+    "character": "鬼",
+    "category": ["two"]
+  },
+  {
+    "code": "IXP",
+    "character": "鹿",
+    "category": ["hard"]
+  },
+  {
+    "code": "NXU",
+    "character": "龜",
+    "category": ["hard"]
+  },
+  {
+    "code": "YX",
+    "character": "齊",
+    "category": ["hard"]
+  }
+]

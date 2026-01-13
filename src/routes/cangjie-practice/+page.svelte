@@ -1,15 +1,28 @@
 <script>
   import { onMount } from 'svelte';
-  import cangjieData from './cangjie-practice.json';
-  import deformationData from './cangjie-deformations.json';
-  import radicalData from './cangjie-radicals.json';
+  import questionsData from './cangjie-practice-questions.json';
+
+  const cangjieMap = {};
+  for (const q of questionsData) {
+    cangjieMap[q.character] = q.code;
+  }
+
+  function convertInput(input) {
+    let result = '';
+    for (const char of input) {
+      result += cangjieMap[char] || char;
+    }
+    return result.toUpperCase();
+  }
 
   let basicChecked = $state(true);
-  let deformationChecked = $state(false);
+  let auxiliaryChecked = $state(false);
   let radicalChecked = $state(false);
-  let selectedMode = $state('basic');
-  let nextMode = $state('basic');
-  let nextNextMode = $state('basic');
+  let twoChecked = $state(false);
+  let hardChecked = $state(false);
+  let selectedCategory = $state('basic');
+  let nextCategory = $state('basic');
+  let nextNextCategory = $state('basic');
   let currentCode = $state('');
   let currentQuestion = $state('');
   let previousQuestion = $state('');
@@ -22,43 +35,34 @@
   let feedbackClass = $state('');
   let animate = $state(false);
   let inputRef;
+  let warningMessage = $state('');
+  let settingsOpen = $state(false);
 
-  let checkedModes = $derived([basicChecked ? 'basic' : null, deformationChecked ? 'deformation' : null, radicalChecked ? 'radical' : null].filter(Boolean));
-  let currentData = $state(cangjieData);
-  let codes = $state(Object.keys(cangjieData));
+  let checkedCategories = $derived([basicChecked ? 'basic' : null, auxiliaryChecked ? 'auxiliary' : null, radicalChecked ? 'radical' : null, twoChecked ? 'two' : null, hardChecked ? 'hard' : null].filter(Boolean));
+  let filteredQuestions = $derived(questionsData.filter(q => checkedCategories.some(cat => q.category.includes(cat))));
 
   function pickRandomCode() {
     previousQuestion = currentQuestion;
-    if (checkedModes.length === 0) return; // no modes checked
-    const randomModeIndex = Math.floor(Math.random() * checkedModes.length);
-    selectedMode = checkedModes[randomModeIndex];
-    if (selectedMode === 'basic') currentData = cangjieData;
-    else if (selectedMode === 'deformation') currentData = deformationData;
-    else if (selectedMode === 'radical') currentData = radicalData;
-    codes = Object.keys(currentData);
-    const randomIndex = Math.floor(Math.random() * codes.length);
-    currentCode = codes[randomIndex];
-    if (selectedMode === 'deformation' || selectedMode === 'radical') {
-      const deformations = currentData[currentCode];
-      const randomDefIndex = Math.floor(Math.random() * deformations.length);
-      currentQuestion = deformations[randomDefIndex];
-    } else {
-      currentQuestion = currentData[currentCode];
-    }
+    if (checkedCategories.length === 0) return; // no categories checked
+    const randomIndex = Math.floor(Math.random() * filteredQuestions.length);
+    const question = filteredQuestions[randomIndex];
+    currentCode = question.code;
+    currentQuestion = question.character;
+    selectedCategory = question.category[0]; // use first category for length check
     // Pre-make the next question
     if (nextQuestion === "") {
-      const { question: nextQ, code: nextC, mode: nextM } = pickNewQuestion();
-    nextQuestion = nextQ;
-    nextCode = nextC;
-    nextMode = nextM;
+      const nextQ = pickNewQuestion();
+      nextQuestion = nextQ.character;
+      nextCode = nextQ.code;
+      nextCategory = nextQ.category[0];
     }
 
     if (nextNextQuestion === "") {
-    // Pre-make the next-next question
-    const { question: nextNextQ, code: nextNextC, mode: nextNextM } = pickNewQuestion();
-    nextNextQuestion = nextNextQ;
-    nextNextCode = nextNextC;
-    nextNextMode = nextNextM;
+      // Pre-make the next-next question
+      const nextNextQ = pickNewQuestion();
+      nextNextQuestion = nextNextQ.character;
+      nextNextCode = nextNextQ.code;
+      nextNextCategory = nextNextQ.category[0];
     }
 
     userInput = '';
@@ -67,24 +71,9 @@
   }
 
   function pickNewQuestion() {
-    if (checkedModes.length === 0) return { question: '', code: '', mode: 'basic' };
-    const randomModeIndex = Math.floor(Math.random() * checkedModes.length);
-    const mode = checkedModes[randomModeIndex];
-    let data = cangjieData;
-    if (mode === 'deformation') data = deformationData;
-    else if (mode === 'radical') data = radicalData;
-    const keys = Object.keys(data);
-    const randomIndex = Math.floor(Math.random() * keys.length);
-    const code = keys[randomIndex];
-    let question;
-    if (mode === 'deformation' || mode === 'radical') {
-      const deformations = data[code];
-      const randomDefIndex = Math.floor(Math.random() * deformations.length);
-      question = deformations[randomDefIndex];
-    } else {
-      question = data[code];
-    }
-    return { question, code, mode };
+    if (checkedCategories.length === 0) return { character: '', code: '', category: ['basic'] };
+    const randomIndex = Math.floor(Math.random() * filteredQuestions.length);
+    return filteredQuestions[randomIndex];
   }
 
   function animateQuestions() {
@@ -94,16 +83,16 @@
       previousQuestion = currentQuestion;
       currentQuestion = nextQuestion;
       currentCode = nextCode;
-      selectedMode = nextMode;
+      selectedCategory = nextCategory;
       // Pre-make the next question for the next round
       nextQuestion = nextNextQuestion;
       nextCode = nextNextCode;
-      nextMode = nextNextMode;
+      nextCategory = nextNextCategory;
       // Pre-make the next-next question for the next round
-      const { question: nextNextQ, code: nextNextC, mode: nextNextM } = pickNewQuestion();
-      nextNextQuestion = nextNextQ;
-      nextNextCode = nextNextC;
-      nextNextMode = nextNextM;
+      const nextNextQ = pickNewQuestion();
+      nextNextQuestion = nextNextQ.character;
+      nextNextCode = nextNextQ.code;
+      nextNextCategory = nextNextQ.category[0];
       feedback = '';
       feedbackClass = '';
       animate = false;
@@ -115,27 +104,42 @@
 
   function checkInput() {
     const correctAnswer = currentCode;
-    if (userInput.toUpperCase() === correctAnswer) {
+    const convertedInput = convertInput(userInput);
+    if (convertedInput === correctAnswer) {
       userInput = '';
       feedbackClass = 'correct';
       animateQuestions();
     } else {
       feedback = '錯誤，請再試一次。';
       feedbackClass = 'incorrect';
-      userInput = '';
+      userInput = userInput.slice(0, currentCode.length);
+      userInput = userInput.slice(1); // Remove first character, keep the rest
     }
   }
 
   function handleInput() {
     if (animate) return;
-    const requiredLength = selectedMode === 'radical' ? 2 : 1;
-    if (userInput.length >= requiredLength) {
+    const requiredLength = currentCode.length;
+    const convertedLength = convertInput(userInput).length;
+    if (convertedLength >= requiredLength) {
       checkInput();
     }
   }
 
   function handleCheckboxChange() {
+    nextQuestion = '';
+    nextCode = '';
+    nextCategory = '';
+    nextNextQuestion = '';
+    nextNextCode = '';
+    nextNextCategory = '';
     pickRandomCode();
+    previousQuestion = '';
+    if (checkedCategories.length === 0) {
+      warningMessage = '請在設定(右上角)揀至少一種題目類別';
+    } else {
+      warningMessage = '';
+    }
   }
 
   onMount(() => {
@@ -162,16 +166,43 @@
     bind:this={inputRef}
     placeholder="輸入倉頡碼"
     class="input-field"
+    disabled={checkedCategories.length === 0}
   />
+  <p class="warning">{warningMessage}</p>
   <p class="feedback {feedbackClass}">{feedback}</p>
-  <div class="mode-checkboxes">
-    <label><input type="checkbox" bind:checked={basicChecked} on:change={handleCheckboxChange} /> 基本</label>
-    <label><input type="checkbox" bind:checked={deformationChecked} on:change={handleCheckboxChange} /> 變形</label>
-    <label><input type="checkbox" bind:checked={radicalChecked} on:change={handleCheckboxChange} /> 部首</label>
+</div>
+
+<button class="settings-btn" on:click={() => settingsOpen = !settingsOpen}>⚙️</button>
+
+{#if settingsOpen}
+<div class="overlay" on:click={() => settingsOpen = false}></div>
+{/if}
+
+<div class="settings-panel" class:open={settingsOpen}>
+  <div class="settings-header">
+    <h2>設定</h2>
+  </div>
+  <div class="setting">
+    <h3>題目類別</h3>
+    <div class="category-buttons">
+      <button class="category-btn {basicChecked ? 'checked' : 'unchecked'}" on:click={() => { basicChecked = !basicChecked; handleCheckboxChange(); }}>基本</button>
+      <button class="category-btn {auxiliaryChecked ? 'checked' : 'unchecked'}" on:click={() => { auxiliaryChecked = !auxiliaryChecked; handleCheckboxChange(); }}>輔助</button>
+      <button class="category-btn {radicalChecked ? 'checked' : 'unchecked'}" on:click={() => { radicalChecked = !radicalChecked; handleCheckboxChange(); }}>部首</button>
+      <button class="category-btn {twoChecked ? 'checked' : 'unchecked'}" on:click={() => { twoChecked = !twoChecked; handleCheckboxChange(); }}>二字</button>
+      <button class="category-btn {hardChecked ? 'checked' : 'unchecked'}" on:click={() => { hardChecked = !hardChecked; handleCheckboxChange(); }}>難字</button>
+    </div>
   </div>
 </div>
 
 <style>
+  :global(:root) {
+    --current-font-size: 7rem;
+    --prev-next-font-size: 4rem;
+    --small-font-size: 1rem;
+    --translate-distance: 7rem;
+    --translate-large: 9rem;
+  }
+
   .container {
     position: relative;
     display: flex;
@@ -191,8 +222,8 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 5vw;
-    margin: 40px 0;
+    height: 6rem;
+    margin: 3rem 0;
     /* overflow: hidden; */
   }
 
@@ -209,54 +240,54 @@
   }
 
   .question.previous {
-    transform: translateX(-6vw);
+    transform: translateX(calc(-1 * var(--translate-distance)));
     color: grey;
-    font-size: 3vw;
+    font-size: var(--prev-next-font-size);
   }
 
   .question.current {
     transform: translateX(0);
-    font-size: 5vw;
+    font-size: var(--current-font-size);
   }
 
   .question.next {
-    transform: translateX(6vw);
+    transform: translateX(var(--translate-distance));
     color: grey;
-    font-size: 3vw;
+    font-size: var(--prev-next-font-size);
     opacity: 1;
   }
 
   .question-container.animate .current {
-    transform: translateX(-6vw);
+    transform: translateX(calc(-1 * var(--translate-distance)));
     color: grey;
-    font-size: 3vw;
+    font-size: var(--prev-next-font-size);
   }
 
   .question-container.animate .next {
     transform: translateX(0);
     color: white;
-    font-size: 5vw;
+    font-size: var(--current-font-size);
     opacity: 1;
   }
 
   .question-container.animate .previous {
-    transform: translateX(-10vw);
-    font-size: 1vw;
+    transform: translateX(calc(-1 * var(--translate-large)));
+    font-size: var(--small-font-size);
     opacity: 0;
 
   }
 
   .question.next-next {
-    transform: translateX(6vw);
+    transform: translateX(var(--translate-large));
     color: grey;
-    font-size: 1vw;
+    font-size: var(--small-font-size);
     opacity: 0;
   }
 
   .question-container.animate .next-next {
-    transform: translateX(6vw);
+    transform: translateX(var(--translate-distance));
     color: grey;
-    font-size: 3vw;
+    font-size: var(--prev-next-font-size);
     opacity: 1;
   }
 
@@ -275,6 +306,12 @@
     margin-top: 20px;
   }
 
+  .warning {
+    font-size: 1.5rem;
+    margin-top: 10px;
+    color: orange;
+  }
+
   .correct {
     color: green;
   }
@@ -283,17 +320,85 @@
     color: red;
   }
 
-  .mode-checkboxes {
-    position: absolute;
-    bottom: 20px;
-    left: 20px;
+  .category-buttons {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 0.625rem;
+  }
+
+  .category-btn {
+    border: 1px solid;
+    background: none;
+    padding: 0.3125rem 0.625rem;
+    margin: 0 0.3125rem;
+    cursor: pointer;
     font-size: 1rem;
   }
 
-  .mode-checkboxes label {
-    margin: 5px 0;
+  .category-btn.unchecked {
+    color: grey;
+    border-color: grey;
+  }
+
+  .category-btn.checked {
+    color: lightblue;
+    border-color: lightblue;
+  }
+
+  .settings-btn {
+    position: fixed;
+    top: 2rem;
+    right: 2rem;
+    background: none;
+    border: none;
+    font-size: 3rem;
+    cursor: pointer;
+    z-index: 102;
+  }
+
+  .overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 100;
+  }
+
+  .settings-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 20rem;
+    height: 100vh;
+    background: rgb(61, 61, 61);
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    z-index: 101;
+    padding: 1.25rem;
+    box-sizing: border-box;
+  }
+
+  .settings-panel.open {
+    transform: translateX(0);
+  }
+
+  .settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+  }
+
+  .settings-header h2 {
+    margin: 0;
+  }
+
+
+  .setting h3 {
+    margin-bottom: 0.625rem;
   }
 
   body {
@@ -301,48 +406,17 @@
   }
 
   /* Mobile responsive styles - using aspect ratio */
-  @media (max-aspect-ratio: 1/1) and (max-width: 768px),
-         (min-aspect-ratio: 1/1) and (max-width: 896px) and (max-height: 414px) {
+  @media (max-aspect-ratio: 1/1)  {
+    :global(:root) {
+      --current-font-size: 9.6rem;
+      --prev-next-font-size: 4.8rem;
+      --small-font-size: 2.4rem;
+      --translate-distance: 9.6rem;
+      --translate-large: 14.4rem;
+    }
+
     .question-container {
-      height: 20vw;
-    }
-
-    .question.previous {
-      transform: translateX(-20vw);
-      font-size: 10vw;
-    }
-
-    .question.current {
-      font-size: 20vw;
-    }
-
-    .question.next {
-      transform: translateX(20vw);
-      font-size: 10vw;
-    }
-
-    .question-container.animate .current {
-      transform: translateX(-20vw);
-      font-size: 10vw;
-    }
-
-    .question-container.animate .next {
-      font-size: 20vw;
-    }
-
-    .question-container.animate .previous {
-      transform: translateX(-30vw);
-      font-size: 5vw;
-    }
-
-    .question.next-next {
-      transform: translateX(20vw);
-      font-size: 5vw;
-    }
-
-    .question-container.animate .next-next {
-      transform: translateX(20vw);
-      font-size: 10vw;
+      height: var(--current-font-size);
     }
   }
 </style>
