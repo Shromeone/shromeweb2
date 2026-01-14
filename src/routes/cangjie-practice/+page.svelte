@@ -7,6 +7,22 @@
     cangjieMap[q.character] = q.code;
   }
 
+  const radicalMap = {
+    'A': '日', 'B': '月', 'C': '金', 'D': '木', 'E': '水',
+    'F': '火', 'G': '土', 'H': '竹', 'I': '戈', 'J': '十',
+    'K': '大', 'L': '中', 'M': '一', 'N': '弓', 'O': '人',
+    'P': '心', 'Q': '手', 'R': '口', 'S': '尸', 'T': '廿',
+    'U': '山', 'V': '女', 'W': '田', 'X': '難', 'Y': '卜', 'Z': '重'
+  };
+
+  function convertCodeToRadicals(code) {
+    return code.split('').map(letter => radicalMap[letter] || letter).join('');
+  }
+
+  function isSvgPath(character) {
+    return typeof character === 'string' && character.endsWith('.svg');
+  }
+
   function convertInput(input) {
     let result = '';
     for (const char of input) {
@@ -37,6 +53,12 @@
   let inputRef;
   let warningMessage = $state('');
   let settingsOpen = $state(false);
+  let hintThreshold = $state(2);
+  let hintType = $state('alphabets');
+  let showHintImage = $state(true);
+  let hintImageUrl = $state('');
+  let wrongAttempts = $state(0);
+  let hintText = $state('');
 
   let checkedCategories = $derived([basicChecked ? 'basic' : null, auxiliaryChecked ? 'auxiliary' : null, radicalChecked ? 'radical' : null, twoChecked ? 'two' : null, hardChecked ? 'hard' : null].filter(Boolean));
   let filteredQuestions = $derived(questionsData.filter(q => checkedCategories.some(cat => q.category.includes(cat))));
@@ -68,6 +90,8 @@
     userInput = '';
     feedback = '';
     feedbackClass = '';
+    wrongAttempts = 0;
+    updateHintText();
   }
 
   function pickNewQuestion() {
@@ -77,6 +101,8 @@
   }
 
   function animateQuestions() {
+    feedback = '';
+
     // Use the pre-made next question
     animate = true;
     setTimeout(() => {
@@ -96,6 +122,7 @@
       feedback = '';
       feedbackClass = '';
       animate = false;
+      updateHintText();
     }, 200);
     setTimeout(() => {
     handleInput();
@@ -108,12 +135,34 @@
     if (convertedInput === correctAnswer) {
       userInput = '';
       feedbackClass = 'correct';
+      wrongAttempts = 0;
       animateQuestions();
     } else {
+      wrongAttempts++;
+      updateHintText();
       feedback = '錯誤，請再試一次。';
       feedbackClass = 'incorrect';
       userInput = userInput.slice(0, currentCode.length);
       userInput = userInput.slice(1); // Remove first character, keep the rest
+    }
+  }
+
+  function updateHintText() {
+    if (hintThreshold === 0 || wrongAttempts >= hintThreshold) {
+      if (hintType === 'alphabets') {
+        hintText = `提示: ${currentCode}`;
+      } else {
+        hintText = `提示: ${convertCodeToRadicals(currentCode)}`;
+      }
+
+      if (showHintImage && currentCode.length >= 2) {
+        hintImageUrl = `https://www.hkcards.com/img/cj/${currentQuestion}.png`;
+      } else {
+        hintImageUrl = '';
+      }
+    } else {
+      hintText = "";
+      hintImageUrl = '';
     }
   }
 
@@ -155,10 +204,34 @@
   <h1>倉頡字碼練習</h1>
   <p>看到漢字時，請輸入對應的倉頡碼。</p>
   <div class="question-container" class:animate>
-    <div class="question previous">{previousQuestion}</div>
-    <div class="question current">{currentQuestion}</div>
-    <div class="question next">{nextQuestion}</div>
-    <div class="question next-next">{nextNextQuestion}</div>
+    <div class="question previous">
+      {#if isSvgPath(previousQuestion)}
+        <img src={previousQuestion} alt="Previous question" class="question-svg" />
+      {:else}
+        {previousQuestion}
+      {/if}
+    </div>
+    <div class="question current">
+      {#if isSvgPath(currentQuestion)}
+        <img src={currentQuestion} alt="Current question" class="question-svg" />
+      {:else}
+        {currentQuestion}
+      {/if}
+    </div>
+    <div class="question next">
+      {#if isSvgPath(nextQuestion)}
+        <img src={nextQuestion} alt="Next question" class="question-svg" />
+      {:else}
+        {nextQuestion}
+      {/if}
+    </div>
+    <div class="question next-next">
+      {#if isSvgPath(nextNextQuestion)}
+        <img src={nextNextQuestion} alt="Next next question" class="question-svg" />
+      {:else}
+        {nextNextQuestion}
+      {/if}
+    </div>
   </div>
   <input
     bind:value={userInput}
@@ -168,6 +241,12 @@
     class="input-field"
     disabled={checkedCategories.length === 0}
   />
+  {#if hintText}
+    <p class="hint">{hintText}</p>
+  {/if}
+  {#if hintImageUrl}
+    <img class="hint-image" src={hintImageUrl} alt="Cangjie code hint" />
+  {/if}
   <p class="warning">{warningMessage}</p>
   <p class="feedback {feedbackClass}">{feedback}</p>
 </div>
@@ -192,6 +271,33 @@
       <button class="category-btn {hardChecked ? 'checked' : 'unchecked'}" on:click={() => { hardChecked = !hardChecked; handleCheckboxChange(); }}>難字</button>
     </div>
   </div>
+  <div class="setting">
+    <h3>錯誤X次後提示</h3>
+    <div class="threshold-buttons">
+      <button class="threshold-btn {hintThreshold === 0 ? 'selected' : ''}" on:click={() => hintThreshold = 0}>經常出現</button>
+      <button class="threshold-btn {hintThreshold === 1 ? 'selected' : ''}" on:click={() => hintThreshold = 1}>1 次</button>
+      <button class="threshold-btn {hintThreshold === 2 ? 'selected' : ''}" on:click={() => hintThreshold = 2}>2 次</button>
+      <button class="threshold-btn {hintThreshold === 3 ? 'selected' : ''}" on:click={() => hintThreshold = 3}>3 次</button>
+      <button class="threshold-btn {hintThreshold === 5 ? 'selected' : ''}" on:click={() => hintThreshold = 5}>5 次</button>
+    </div>
+  </div>
+  <div class="setting">
+    <h3>提示類型</h3>
+    <div class="hint-type-buttons">
+      <button class="hint-type-btn {hintType === 'alphabets' ? 'selected' : ''}" on:click={() => { hintType = 'alphabets'; updateHintText(); }}>字母</button>
+      <button class="hint-type-btn {hintType === 'radicals' ? 'selected' : ''}" on:click={() => { hintType = 'radicals'; updateHintText(); }}>倉頡碼</button>
+    </div>
+  </div>
+  <div class="setting">
+    <label class="checkbox-label">
+      <input
+        type="checkbox"
+        bind:checked={showHintImage}
+        on:change={updateHintText}
+      />
+      <span>顯示圖片</span>
+    </label>
+  </div>
 </div>
 
 <style>
@@ -208,7 +314,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: top;
     height: 100vh;
     font-family: Arial, sans-serif;
   }
@@ -233,6 +339,15 @@
     position: absolute;
     font-weight: bold;
     z-index: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .question-svg {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
   }
 
   .question-container.animate .question {
@@ -299,7 +414,19 @@
     margin-bottom: 20px;
   }
 
+  .hint {
+    font-size: 1.5rem;
+    margin-top: 10px;
+    color: lightblue;
+  }
 
+  .hint-image {
+    max-width: 30vw;
+    height: auto;
+    margin-top: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
 
   .feedback {
     font-size: 1.5rem;
@@ -344,6 +471,105 @@
   .category-btn.checked {
     color: lightblue;
     border-color: lightblue;
+  }
+
+  .threshold-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 0.625rem;
+  }
+
+  .threshold-btn {
+    border: 1px solid;
+    background: none;
+    padding: 0.3125rem 0.625rem;
+    margin: 0 0.3125rem;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+
+  .threshold-btn.selected {
+    color: lightblue;
+    border-color: lightblue;
+  }
+
+  .threshold-btn:not(.selected) {
+    color: grey;
+    border-color: grey;
+  }
+
+  .hint-type-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 0.625rem;
+  }
+
+  .hint-type-btn {
+    border: 1px solid;
+    background: none;
+    padding: 0.3125rem 0.625rem;
+    margin: 0 0.3125rem;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+
+  .hint-type-btn.selected {
+    color: lightblue;
+    border-color: lightblue;
+  }
+
+  .hint-type-btn:not(.selected) {
+    color: grey;
+    border-color: grey;
+  }
+
+  .image-toggle-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 0.625rem;
+  }
+
+  .image-toggle-btn {
+    border: 1px solid;
+    background: none;
+    padding: 0.3125rem 0.625rem;
+    margin: 0 0.3125rem;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+
+  .image-toggle-btn.selected {
+    color: lightblue;
+    border-color: lightblue;
+  }
+
+  .image-toggle-btn:not(.selected) {
+    color: grey;
+    border-color: grey;
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 1rem;
+    color: white;
+    margin-bottom: 0.625rem;
+  }
+
+  .checkbox-label input[type="checkbox"] {
+    width: 1.2rem;
+    height: 1.2rem;
+    accent-color: lightblue;
+    cursor: pointer;
+  }
+
+  .checkbox-label span {
+    user-select: none;
   }
 
   .settings-btn {
