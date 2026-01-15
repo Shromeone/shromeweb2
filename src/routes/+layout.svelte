@@ -23,7 +23,7 @@
 {@render children?.()}
 
 <footer class="version-footer">
-  <p>v1.1.0</p>
+  <p>Last update: 2026-01-15</p>
 </footer>
 
 <style>
@@ -51,7 +51,7 @@
     bottom: 0;
     right: 0;
     padding: 0.5rem;
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: rgba(0, 0, 0, 0.1);
     color: rgba(255, 255, 255, 0.6);
     font-size: 0.75rem;
     z-index: 100;
