@@ -343,7 +343,7 @@
     align-items: center;
     height: 6rem;
     margin: 3rem 0;
-    overflow: hidden;
+    /* overflow: hidden; */
   }
 
 
