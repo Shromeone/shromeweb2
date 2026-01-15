@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import questionsData from './cangjie-practice-questions.json';
+  import settingsIcon from '$lib/images/settings-svgrepo-com.svg';
 
   const cangjieMap = {};
   for (const q of questionsData) {
@@ -53,6 +54,8 @@
   let inputRef;
   let warningMessage = $state('');
   let settingsOpen = $state(false);
+  let isSpinning = $state(false);
+  let spinDirection = $state('clockwise');
   let hintThreshold = $state(2);
   let hintType = $state('alphabets');
   let showHintImage = $state(true);
@@ -191,6 +194,14 @@
     }
   }
 
+  function handleSettingsToggle() {
+    const isOpening = !settingsOpen;
+    spinDirection = isOpening ? 'anticlockwise' : 'clockwise';
+    isSpinning = true;
+    settingsOpen = !settingsOpen;
+    setTimeout(() => isSpinning = false, 300);
+  }
+
   onMount(() => {
     pickRandomCode();
   });
@@ -251,7 +262,9 @@
   <p class="feedback {feedbackClass}">{feedback}</p>
 </div>
 
-<button class="settings-btn" on:click={() => settingsOpen = !settingsOpen}>⚙️</button>
+<button class="settings-btn" on:click={handleSettingsToggle}>
+  <img src={settingsIcon} alt="settings" class="settings-icon {isSpinning ? 'spinning' : ''} {spinDirection}" />
+</button>
 
 {#if settingsOpen}
 <div class="overlay" on:click={() => settingsOpen = false}></div>
@@ -330,7 +343,7 @@
     align-items: center;
     height: 6rem;
     margin: 3rem 0;
-    /* overflow: hidden; */
+    overflow: hidden;
   }
 
 
@@ -574,13 +587,23 @@
 
   .settings-btn {
     position: fixed;
-    top: 2rem;
-    right: 2rem;
+    top: 1rem;
+    right: 1rem;
     background: none;
     border: none;
-    font-size: 3rem;
     cursor: pointer;
     z-index: 102;
+    width: 7em;
+    height: 7em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .settings-icon {
+    width: 100%;
+    height: 100%;
+    object-fit:fill;
   }
 
   .overlay {
@@ -627,6 +650,26 @@
     margin-bottom: 0.625rem;
   }
 
+  @keyframes spin-clockwise {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(180deg); }
+  }
+
+  @keyframes spin-anticlockwise {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(-180deg); }
+  }
+
+  .settings-icon.spinning.clockwise {
+    animation: spin-clockwise 0.3s ease;
+    transform-origin: center;
+  }
+
+  .settings-icon.spinning.anticlockwise {
+    animation: spin-anticlockwise 0.3s ease;
+    transform-origin: center;
+  }
+
   body {
     overflow-x: hidden;
   }
@@ -643,6 +686,17 @@
 
     .question-container {
       height: var(--current-font-size);
+    }
+
+    .settings-panel {
+      left: 0;
+      right: auto;
+      width: 80vw;
+      transform: translateX(-100%);
+    }
+
+    .settings-panel.open {
+      transform: translateX(0);
     }
   }
 </style>
