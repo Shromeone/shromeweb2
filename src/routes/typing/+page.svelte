@@ -6,6 +6,7 @@
   import { onDestroy, onMount, tick } from "svelte";
   import { charPoints, bonus } from "./bonus-points.json";
   import { timeLimits } from "./time-limits.json";
+  import settingsIcon from '$lib/images/settings-svgrepo-com.svg';
   import "./passages.json";
   const GameState = Object.freeze({
     START: 0,
@@ -42,6 +43,8 @@
   let resultsScreen = $state();
 
   let settingsOpen = $state(false);
+  let isSpinning = $state(false);
+  let spinDirection = $state('clockwise');
 
   let focused = $state(false);
   let searchMode = $state(false);
@@ -54,6 +57,11 @@
   let compositionBackspaceLock = false;
   let timeLimit = $state(60);
   let fontSelect = $state("LXGW WenKai TC");
+
+  let autoHintTimeout = null;
+  let autoHintShown = $state(false);
+  let autoHintMode = $state('timed');
+  let autoHintTimeoutSeconds = $state(5);
 
   let points = $state(0);
   let basePoints = $state(0);
@@ -168,6 +176,9 @@ tryPressEnterFocus(e);
     updateTimerInterval = setInterval(updateTimer, 100);
     focusInputInterval = setInterval(tryFocus, 300);
     searchMode = false; // Disable search mode when typing starts
+    if (autoHintMode === 'always') {
+      autoHintShown = true;
+    }
     // Scroll to position the first character at 30% from top
     setTimeout(() => updateScroll(), 100);
   }
@@ -210,6 +221,9 @@ tryPressEnterFocus(e);
     clearInterval(updateTimerInterval);
     clearInterval(updateInfoInterval);
     clearInterval(focusInputInterval);
+    clearTimeout(autoHintTimeout);
+    autoHintTimeout = null;
+    autoHintShown = false;
     gameState = GameState.FINISH;
     console.log(wrongWords, content.length);
     updateInfo();
@@ -351,11 +365,13 @@ tryPressEnterFocus(e);
     if (typeCancelled) {
       return;
     }
+    let hadWrongInput = false;
     for (let i = 0; i < word.length; i++) {
       currentWord = content[currentWordIndex];
       const char = word[i];
       if (!wordCorrect(char)) {
         wrongIndexes = [...wrongIndexes, currentWordIndex];
+        hadWrongInput = true;
       } else {
         correctIndexes = [...correctIndexes, currentWordIndex];
       }
@@ -369,6 +385,26 @@ tryPressEnterFocus(e);
     updateInputBoxPos();
 
     if (gameState !== GameState.FINISH) calcTempPoints();
+
+    // Auto-hint logic
+    if (!hadWrongInput) {
+      // Only reset timer on correct input
+      if (autoHintTimeout) clearTimeout(autoHintTimeout);
+      autoHintShown = autoHintMode === 'always';
+      if (autoHintMode === 'timed' && gameState === GameState.PLAY && currentWordIndex < content.length) {
+        autoHintTimeout = setTimeout(() => {
+          autoHintShown = true;
+        }, autoHintTimeoutSeconds * 1000);
+      }
+    } else {
+      // On wrong input, don't reset timer, but ensure it's running if not already
+      if (!autoHintTimeout && autoHintMode === 'timed' && gameState === GameState.PLAY && currentWordIndex < content.length) {
+        autoHintTimeout = setTimeout(() => {
+          autoHintShown = true;
+        }, autoHintTimeoutSeconds * 1000);
+      }
+      // For always mode, autoHintShown is already set
+    }
   }
 
   function calcTempPoints() {
@@ -489,6 +525,9 @@ tryPressEnterFocus(e);
     clearInterval(updateTimerInterval);
     clearInterval(updateInfoInterval);
     clearInterval(focusInputInterval);
+    clearTimeout(autoHintTimeout);
+    autoHintTimeout = null;
+    autoHintShown = false;
     updateTimer(0);
     updateInputBoxPos();
     updateScroll();
@@ -505,6 +544,14 @@ tryPressEnterFocus(e);
 
   function setSettingsVisibility(show = false) {
     settingsOpen = show;
+  }
+
+  function handleSettingsToggle() {
+    const isOpening = !settingsOpen;
+    spinDirection = isOpening ? 'anticlockwise' : 'clockwise';
+    isSpinning = true;
+    settingsOpen = !settingsOpen;
+    setTimeout(() => isSpinning = false, 300);
   }
   let correctWords = $derived(correctIndexes.length);
   let wrongWords = $derived(wrongIndexes.length);
@@ -573,9 +620,9 @@ tryPressEnterFocus(e);
   </div>
   <div class="test-content {gameState === GameState.PLAY ? 'with-fixed-info' : ''}" style="--char-font: {fontSelect}">
     {#each content as char, index (index)}
-      <div 
-        class="char {searchMode ? 'search-mode-active' : ''}" 
-        id="char-{index}" 
+      <div
+        class="char {searchMode ? 'search-mode-active' : ''} {index === currentWordIndex && autoHintShown ? 'auto-hint' : ''}"
+        id="char-{index}"
         onmouseenter={onMouseEnterChar}
       >
         {#if searchMode}
@@ -635,11 +682,7 @@ tryPressEnterFocus(e);
       {searchMode ? "搜尋模式: 開啟" : "搜尋模式: 關閉"}
     </button>
     
-    {#if gameState !== GameState.PLAY}
-      <button class="bottom-btn" onclick={() => setSettingsVisibility(true)}
-        >設定</button
-      >
-    {/if}
+
     
     {#if gameState === GameState.PLAY}
       <button class="bottom-btn" onmouseenter={cancelInput} onclick={finishGame}
@@ -660,36 +703,51 @@ tryPressEnterFocus(e);
     {/if}
   </div>
 
-  <div class="settings-screen {settingsOpen ? '' : 'hidden'}">
-    <div class="settings-panel">
+  {#if settingsOpen}
+  <div class="overlay" onclick={handleSettingsToggle}></div>
+  {/if}
+
+  <div class="settings-panel" class:open={settingsOpen}>
+    <div class="settings-header">
       <h2>設定</h2>
-      <div class="passage-select">
-        <p>文章</p>
-        <select bind:value={content} id="passage" placeholder="選擇文章">
-          {#each passages as passage}
-            <option value={passage.content}>{passage.title}</option>
-          {/each}
-        </select>
-      </div>
-      <textarea bind:value={content} name="content" id="" cols="30" rows="10"
-      ></textarea>
-      <div class="time-select">
-        <p>時間限制</p>
-        <select bind:value={timeLimit} id="time" placeholder="">
-          <option value={0}>無時限</option>
-          {#each timeLimits as limit}
-            <option value={limit}>{timeToChinese(limit)}</option>
-          {/each}
-        </select>
-      </div>
-      <div class="font-select">
-        <p>字體</p>
-        <select bind:value={fontSelect} id="font-select" placeholder="">
-          <option value={"LXGW WenKai TC"}>霞鶩體</option>
-          <option value={"Noto Serif HK"}>Noto Sans</option>
-        </select>
-      </div>
-      <button onclick={() => setSettingsVisibility(false)}>關閉</button>
+    </div>
+    <div class="setting">
+      <h3>文章</h3>
+      <select bind:value={content} id="passage" placeholder="選擇文章">
+        {#each passages as passage}
+          <option value={passage.content}>{passage.title}</option>
+        {/each}
+      </select>
+    </div>
+    <div class="setting">
+      <textarea bind:value={content} name="content" id="" cols="80" rows="10"></textarea>
+    </div>
+    <div class="setting">
+      <h3>時間限制</h3>
+      <select bind:value={timeLimit} id="time" placeholder="">
+        <option value={0}>無時限</option>
+        {#each timeLimits as limit}
+          <option value={limit}>{timeToChinese(limit)}</option>
+        {/each}
+      </select>
+    </div>
+    <div class="setting">
+      <h3>字體</h3>
+      <select bind:value={fontSelect} id="font-select" placeholder="">
+        <option value={"LXGW WenKai TC"}>霞鶩體</option>
+        <option value={"Noto Serif HK"}>Noto Sans</option>
+      </select>
+    </div>
+    <div class="setting">
+      <h3>自動提示</h3>
+      <select bind:value={autoHintMode} id="auto-hint-mode">
+        <option value="always">總是顯示</option>
+        <option value="timed">定時顯示</option>
+      </select>
+      {#if autoHintMode === 'timed'}
+        <input type="range" min="1" max="20" bind:value={autoHintTimeoutSeconds} id="auto-hint-timeout" />
+        <span>{autoHintTimeoutSeconds}秒</span>
+      {/if}
     </div>
   </div>
 
@@ -740,25 +798,49 @@ tryPressEnterFocus(e);
       </div>
     </div>
   </div>
+
+  <button class="settings-btn" onclick={handleSettingsToggle}>
+    <img src={settingsIcon} alt="settings" class="settings-icon {isSpinning ? 'spinning' : ''} {spinDirection}" />
+  </button>
 </div>
 
 <style>
   #start-partition {
     height: 25vh;}
   .passage-select,
-  .time-select {
+  .time-select,
+  .auto-hint-select {
     display: flex;
     align-items: center;
     gap: 3em;
   }
 
   .passage-select select,
-  .time-select select {
+  .time-select select,
+  .auto-hint-select select {
     flex: 1;
   }
 
-  .results-screen,
-  .settings-screen {
+  .auto-hint-select input[type="range"] {
+    flex: 1;
+  }
+
+  .auto-hint-select span {
+    color: white;
+    font-size: 1rem;
+  }
+
+  .overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 100;
+  }
+
+  .results-screen {
     opacity: 100%;
     position: fixed;
     display: flex;
@@ -787,16 +869,21 @@ tryPressEnterFocus(e);
   }
 
   .settings-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    background-color: rgb(91, 97, 148);
-    width: 60%;
-    padding: 1.5em 3em 1em 3em;
-    border-radius: 2rem;
-    border: 3px dashed rgb(38, 38, 84);
-    box-shadow: 0px 0px 30px black;
-    justify-content: center;
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 50vw;
+    height: 100vh;
+    background: rgb(61, 61, 61);
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    z-index: 101;
+    padding: 1.25rem;
+    box-sizing: border-box;
+  }
+
+  .settings-panel.open {
+    transform: translateX(0);
   }
 
   .settings-panel button {
@@ -1105,5 +1192,50 @@ tryPressEnterFocus(e);
 
   .hints-picture {
     width: 20rem;
+  }
+
+  .char.auto-hint .hints-container {
+    opacity: 100%;
+  }
+
+  .settings-btn {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    z-index: 102;
+    width: 7em;
+    height: 7em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .settings-icon {
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+  }
+
+  @keyframes spin-clockwise {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(180deg); }
+  }
+
+  @keyframes spin-anticlockwise {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(-180deg); }
+  }
+
+  .settings-icon.spinning.clockwise {
+    animation: spin-clockwise 0.3s ease;
+    transform-origin: center;
+  }
+
+  .settings-icon.spinning.anticlockwise {
+    animation: spin-anticlockwise 0.3s ease;
+    transform-origin: center;
   }
 </style>
