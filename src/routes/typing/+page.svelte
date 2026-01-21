@@ -74,6 +74,9 @@
   let speedMultiplier = $state(0);
   let timeLeft = $state(0);
 
+  let cangjieCode = $state('');
+
+
   let isTimeUp = false;
   const autoScrollPercentage = 0.3;
   const autoScrollOffset = 0.1;
@@ -394,6 +397,7 @@ tryPressEnterFocus(e);
       if (autoHintMode === 'timed' && gameState === GameState.PLAY && currentWordIndex < content.length) {
         autoHintTimeout = setTimeout(() => {
           autoHintShown = true;
+
         }, autoHintTimeoutSeconds * 1000);
       }
     } else {
@@ -401,6 +405,7 @@ tryPressEnterFocus(e);
       if (!autoHintTimeout && autoHintMode === 'timed' && gameState === GameState.PLAY && currentWordIndex < content.length) {
         autoHintTimeout = setTimeout(() => {
           autoHintShown = true;
+
         }, autoHintTimeoutSeconds * 1000);
       }
       // For always mode, autoHintShown is already set
@@ -664,6 +669,7 @@ tryPressEnterFocus(e);
             class="hints-picture"
             src="https://www.hkcards.com/img/cj/{char}.png"
           />
+          <p class="cangjie-code">{cangjieCode}</p>
         </div>
       </div>
     {/each}
@@ -1174,10 +1180,11 @@ tryPressEnterFocus(e);
   }
   .hints-container {
     display: flex;
-    top: 5.5rem;
+    flex-direction: column;
+    bottom: 5.5rem;
     /* left: 4rem; */
     width: 21rem;
-    height: 4.5rem;
+    height: 6rem;
     background-color: black;
     justify-content: center;
     align-items: center;
@@ -1192,6 +1199,13 @@ tryPressEnterFocus(e);
 
   .hints-picture {
     width: 20rem;
+  }
+
+  .cangjie-code {
+    color: white;
+    font-size: 1.5rem;
+    margin: 0;
+    font-weight: bold;
   }
 
   .char.auto-hint .hints-container {
