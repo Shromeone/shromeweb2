@@ -8,6 +8,41 @@
   import { timeLimits } from "./time-limits.json";
   import settingsIcon from '$lib/images/settings-svgrepo-com.svg';
   import "./passages.json";
+  import cangjieData from '$lib/data/cj3-30000.txt?raw';
+
+  let cangjieMap = {};
+
+  const cangjieRadicals = {
+    'a': '日',
+    'b': '月',
+    'c': '金',
+    'd': '木',
+    'e': '水',
+    'f': '火',
+    'g': '土',
+    'h': '竹',
+    'i': '戈',
+    'j': '十',
+    'k': '大',
+    'l': '中',
+    'm': '一',
+    'n': '弓',
+    'o': '人',
+    'p': '心',
+    'q': '手',
+    'r': '口',
+    's': '尸',
+    't': '廿',
+    'u': '山',
+    'v': '女',
+    'w': '田',
+    'x': '難',
+    'y': '卜',
+    'z': '曰'
+  };
+
+
+
   const GameState = Object.freeze({
     START: 0,
     PLAY: 1,
@@ -75,9 +110,12 @@
   let timeLeft = $state(0);
 
   let cangjieCode = $state('');
+  let revealedChars = $state(0);
+  let cangjieChars = $derived(getChineseCangjieCode(cangjieCode).split(''));
 
 
   let isTimeUp = false;
+
   const autoScrollPercentage = 0.3;
   const autoScrollOffset = 0.1;
   const inputBoxOffset = {
@@ -85,6 +123,7 @@
     y: 20,
   };
   onMount(() => {
+    initCangjieMap();
     setResultsPanelVisibility(false);
     // setSettingsVisibility(false);
     content = content.replace(/(?:\r\n|\r|\n)/g, "");
@@ -249,7 +288,9 @@ tryPressEnterFocus(e);
   }
 
   function updateInputBoxPos() {
+    
     const currentChar = document.querySelector(`#char-${currentWordIndex}`);
+    updateCangjieCode();
     if (!currentChar) return;
     const rect = currentChar.getBoundingClientRect();
     inputBox.style.top = rect.top + scrollY + inputBoxOffset.y + "px";
@@ -280,6 +321,11 @@ tryPressEnterFocus(e);
     if (!inputBox?.value) {
       tryDelete();
     }
+  }
+
+  if (e.key === 'Shift') {
+    if (!autoHintShown) {autoHintShown = true; return;}
+    revealedChars = Math.min(revealedChars + 1, cangjieChars.length);
   }
 }
 
@@ -363,6 +409,11 @@ tryPressEnterFocus(e);
     });
   }
 
+  function updateCangjieCode() {
+    cangjieCode = currentWord ? cangjieMap[currentWord] || '' : '';
+    revealedChars = 0;
+  }
+
   function validateInput(word) {
     if (gameState === GameState.FINISH) return;
     if (typeCancelled) {
@@ -386,6 +437,7 @@ tryPressEnterFocus(e);
     updateScroll();
     clearInput();
     updateInputBoxPos();
+    updateCangjieCode();
 
     if (gameState !== GameState.FINISH) calcTempPoints();
 
@@ -551,6 +603,21 @@ tryPressEnterFocus(e);
     settingsOpen = show;
   }
 
+  function initCangjieMap() {
+    const lines = cangjieData.split('\n');
+    for (const line of lines) {
+      const parts = line.split(/\s+/);
+      if (parts.length === 3) {
+        cangjieMap[parts[1]] = parts[0];
+      }
+    }
+  }
+
+  function getChineseCangjieCode(code) {
+    if (!code) return '';
+    return code.split('').map(letter => cangjieRadicals[letter.toLowerCase()] || letter).join('');
+  }
+
   function handleSettingsToggle() {
     const isOpening = !settingsOpen;
     spinDirection = isOpening ? 'anticlockwise' : 'clockwise';
@@ -669,7 +736,11 @@ tryPressEnterFocus(e);
             class="hints-picture"
             src="https://www.hkcards.com/img/cj/{char}.png"
           />
-          <p class="cangjie-code">{cangjieCode}</p>
+          <p id="cangjie-code">
+            {#each [...cangjieChars, ...Array(Math.max(0, 5 - cangjieChars.length)).fill('')] as char, i}
+              <span>{i < revealedChars ? char : ''}</span>
+            {/each}
+          </p>
         </div>
       </div>
     {/each}
@@ -1201,11 +1272,19 @@ tryPressEnterFocus(e);
     width: 20rem;
   }
 
-  .cangjie-code {
-    color: white;
-    font-size: 1.5rem;
+  #cangjie-code {
+    display: flex;
+    justify-content: space-between;
+    width: 20rem;
+    text-align: left;
+    font-size: 3rem;
     margin: 0;
     font-weight: bold;
+  }
+
+    #cangjie-code span {
+    width: 4rem;
+
   }
 
   .char.auto-hint .hints-container {
