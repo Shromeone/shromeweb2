@@ -38,7 +38,7 @@
     'w': '田',
     'x': '難',
     'y': '卜',
-    'z': '曰'
+    'z': '重'
   };
 
 
@@ -97,6 +97,7 @@
   let autoHintShown = $state(false);
   let autoHintMode = $state('timed');
   let autoHintTimeoutSeconds = $state(5);
+  let revealInterval = null;
 
   let points = $state(0);
   let basePoints = $state(0);
@@ -134,7 +135,7 @@
 tryPressEnterFocus(e);
       if (document.activeElement === inputBox) return;
       if (document.activeElement === typePrep) return;
-      if (settingsOpen) return;
+      if (settingsOpen || gameState === GameState.START) return;
       e.preventDefault();
       console.log("focused");
       inputBox.focus();};
@@ -156,6 +157,7 @@ tryPressEnterFocus(e);
   function tryFocus() {
     if (document.activeElement === inputBox) return;
     if (document.activeElement.localName === "button") return;
+      if (settingsOpen) return;
     inputBox.focus();
   }
 
@@ -220,6 +222,7 @@ tryPressEnterFocus(e);
     searchMode = false; // Disable search mode when typing starts
     if (autoHintMode === 'always') {
       autoHintShown = true;
+      startRevealInterval();
     }
     // Scroll to position the first character at 30% from top
     setTimeout(() => updateScroll(), 100);
@@ -265,6 +268,8 @@ tryPressEnterFocus(e);
     clearInterval(focusInputInterval);
     clearTimeout(autoHintTimeout);
     autoHintTimeout = null;
+    clearInterval(revealInterval);
+    revealInterval = null;
     autoHintShown = false;
     gameState = GameState.FINISH;
     console.log(wrongWords, content.length);
@@ -324,7 +329,7 @@ tryPressEnterFocus(e);
   }
 
   if (e.key === 'Shift') {
-    if (!autoHintShown) {autoHintShown = true; return;}
+    if (!autoHintShown) {autoHintShown = true; startRevealInterval(); return;}
     revealedChars = Math.min(revealedChars + 1, cangjieChars.length);
   }
 }
@@ -412,6 +417,18 @@ tryPressEnterFocus(e);
   function updateCangjieCode() {
     cangjieCode = currentWord ? cangjieMap[currentWord] || '' : '';
     revealedChars = 0;
+    clearInterval(revealInterval);
+    revealInterval = null;
+  }
+
+  function startRevealInterval() {
+    if (revealedChars >= cangjieChars.length) return;
+    if (revealInterval) clearInterval(revealInterval);
+    revealInterval = setInterval(() => {
+      if (revealedChars < cangjieChars.length) {
+        revealedChars++;
+      }
+    }, 5000);
   }
 
   function validateInput(word) {
@@ -449,14 +466,17 @@ tryPressEnterFocus(e);
       if (autoHintMode === 'timed' && gameState === GameState.PLAY && currentWordIndex < content.length) {
         autoHintTimeout = setTimeout(() => {
           autoHintShown = true;
+          startRevealInterval();
 
         }, autoHintTimeoutSeconds * 1000);
       }
     } else {
+
       // On wrong input, don't reset timer, but ensure it's running if not already
       if (!autoHintTimeout && autoHintMode === 'timed' && gameState === GameState.PLAY && currentWordIndex < content.length) {
         autoHintTimeout = setTimeout(() => {
           autoHintShown = true;
+          startRevealInterval();
 
         }, autoHintTimeoutSeconds * 1000);
       }
@@ -584,6 +604,8 @@ tryPressEnterFocus(e);
     clearInterval(focusInputInterval);
     clearTimeout(autoHintTimeout);
     autoHintTimeout = null;
+    clearInterval(revealInterval);
+    revealInterval = null;
     autoHintShown = false;
     updateTimer(0);
     updateInputBoxPos();
