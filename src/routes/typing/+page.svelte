@@ -113,6 +113,11 @@
   let cangjieCode = $state('');
   let revealedChars = $state(0);
   let cangjieChars = $derived(getChineseCangjieCode(cangjieCode).split(''));
+  let clickedCharIndex = $state(null);
+  let hintsContainer = $state();
+  // let hintCharIndex = $derived(clickedCharIndex !== null ? clickedCharIndex : (autoHintShown ? currentWordIndex : null));
+  let hintCharIndex = $state(0);
+  let globalClickState = $state(0);
 
 
   let isTimeUp = false;
@@ -136,6 +141,8 @@ tryPressEnterFocus(e);
       if (document.activeElement === inputBox) return;
       if (document.activeElement === typePrep) return;
       if (settingsOpen || gameState === GameState.START) return;
+      // Don't focus input if clicking on a link or character
+      if (e.target.closest('a') || e.target.closest('.char')) return;
       e.preventDefault();
       console.log("focused");
       inputBox.focus();};
@@ -144,6 +151,7 @@ tryPressEnterFocus(e);
       if (document.activeElement === inputBox) return;
       if (document.activeElement === typePrep) return;
       if (settingsOpen) return;
+      if (e.target.closest('a') || e.target.closest('.char')) return;
       e.preventDefault();
       console.log("focused");
       inputBox.focus();
@@ -218,12 +226,13 @@ tryPressEnterFocus(e);
     startTime = Date.now();
     updateInfoInterval = setInterval(updateInfo, 2000);
     updateTimerInterval = setInterval(updateTimer, 100);
-    focusInputInterval = setInterval(tryFocus, 300);
+    focusInputInterval = setInterval(tryFocus, 1000);
     searchMode = false; // Disable search mode when typing starts
     if (autoHintMode === 'always') {
       autoHintShown = true;
       startRevealInterval();
     }
+    handleAutoHintLogic();
     // Scroll to position the first character at 30% from top
     setTimeout(() => updateScroll(), 100);
   }
@@ -329,12 +338,29 @@ tryPressEnterFocus(e);
   }
 
   if (e.key === 'Shift') {
-    if (!autoHintShown) {autoHintShown = true; startRevealInterval(); return;}
-    revealedChars = Math.min(revealedChars + 1, cangjieChars.length);
+    // Simulate clicking on the character with hints, or current character if no hints
+    const targetIndex = hintCharIndex !== null ? hintCharIndex : currentWordIndex;
+    const char = content[targetIndex];
+    const nextState = (globalClickState + 1) % 4;
+    globalClickState = nextState;
+
+    if (nextState === 1) {
+      clickedCharIndex = targetIndex;
+      updateCangjieCodeForChar(char);
+    } else if (nextState === 2) {
+      revealedChars = cangjieChars.length;
+    } else if (nextState === 3) {
+      // hyperlink active
+    } else if (nextState === 0) {
+      clickedCharIndex = null;
+    }
   }
 }
 
   function halfInput(e) {
+    clickedCharIndex = null; // Reset clicked hint on any input
+    globalClickState = 0; // Reset click states on any input
+
     // Handle different input types
     if (e.inputType === "deleteContentBackward") {
       // If deleting during composition, don't process it
@@ -353,7 +379,7 @@ tryPressEnterFocus(e);
       }
       return;
     }
-    
+
     if (e.inputType === "insertCompositionText") {
       typeCancelled = false;
       return;
@@ -382,13 +408,13 @@ tryPressEnterFocus(e);
 
     isCompo = false;
     searchMode = false; // Disable search mode when typing
-    
+
     // Only process if we have data and it's not a duplicate
     if (e.data && e.data !== lastProcessedInput) {
       lastProcessedInput = e.data;
       validateInput(e.data);
     }
-    
+
     setTimeout(clearInput, 0);
   }
 
@@ -415,18 +441,65 @@ tryPressEnterFocus(e);
   }
 
   function updateCangjieCode() {
+    hintCharIndex = currentWordIndex;
+    moveHintsToChar(hintCharIndex);
     cangjieCode = currentWord ? cangjieMap[currentWord] || '' : '';
     revealedChars = 0;
+    console.log("update cangjie code");
     clearInterval(revealInterval);
     revealInterval = null;
   }
 
+  function updateCangjieCodeForChar(char) {
+    moveHintsToChar(hintCharIndex);
+    cangjieCode = cangjieMap[char] || '';
+    revealedChars = 0;
+    console.log("update cangjie code for char");
+    clearInterval(revealInterval);
+    revealInterval = null;
+  }
+
+  function moveHintsToChar(index) {
+    if (!hintsContainer) return;
+    const charElement = document.querySelector(`#char-${index}`);
+    if (charElement) {
+      charElement.appendChild(hintsContainer);
+    }
+  }
+
+  // $effect(() => {
+  //   if (hintCharIndex !== null) {
+  //     moveHintsToChar(hintCharIndex);
+  //     const char = content[hintCharIndex];
+  //     updateCangjieCodeForChar(char);
+  //     // Start reveal interval when hints move to current character
+  //     if (hintCharIndex === currentWordIndex && autoHintShown) {
+  //       startRevealInterval();
+  //     }
+  //   }
+  // });
+
+  $effect(() => {
+    if (autoHintShown && hintCharIndex === currentWordIndex) {
+      if (globalClickState === 0) {
+        globalClickState = 1;
+      }
+    }
+  });
+
   function startRevealInterval() {
-    if (revealedChars >= cangjieChars.length) return;
+    if (revealedChars >= cangjieChars.length) {
+      globalClickState = 2; // Set as second click when already full
+      return;
+    }
     if (revealInterval) clearInterval(revealInterval);
     revealInterval = setInterval(() => {
-      if (revealedChars < cangjieChars.length) {
-        revealedChars++;
+      revealedChars++;
+      console.log(`add reveal char to ${revealedChars}`);
+      if (revealedChars >= cangjieChars.length) {
+        clearInterval(revealInterval);
+        revealInterval = null;
+        globalClickState = 2; // Set as second click when fully revealed
       }
     }, 5000);
   }
@@ -457,7 +530,11 @@ tryPressEnterFocus(e);
     updateCangjieCode();
 
     if (gameState !== GameState.FINISH) calcTempPoints();
-
+    handleAutoHintLogic();
+  }
+  
+  function handleAutoHintLogic() {
+    
     // Auto-hint logic
     if (!hadWrongInput) {
       // Only reset timer on correct input
@@ -471,9 +548,11 @@ tryPressEnterFocus(e);
         }, autoHintTimeoutSeconds * 1000);
       }
     } else {
-
+      if (autoHintShown) {
+        startRevealInterval();
+      }
       // On wrong input, don't reset timer, but ensure it's running if not already
-      if (!autoHintTimeout && autoHintMode === 'timed' && gameState === GameState.PLAY && currentWordIndex < content.length) {
+      if (autoHintMode === 'timed' && gameState === GameState.PLAY && currentWordIndex < content.length) {
         autoHintTimeout = setTimeout(() => {
           autoHintShown = true;
           startRevealInterval();
@@ -629,8 +708,10 @@ tryPressEnterFocus(e);
     const lines = cangjieData.split('\n');
     for (const line of lines) {
       const parts = line.split(/\s+/);
-      if (parts.length === 3) {
-        cangjieMap[parts[1]] = parts[0];
+      if (parts.length >= 3) {
+        parts.pop();
+        for (let i = 1; i < parts.length; i++)
+        cangjieMap[parts[i]] = parts[0];
       }
     }
   }
@@ -715,11 +796,38 @@ tryPressEnterFocus(e);
   <div class="test-content {gameState === GameState.PLAY ? 'with-fixed-info' : ''}" style="--char-font: {fontSelect}">
     {#each content as char, index (index)}
       <div
-        class="char {searchMode ? 'search-mode-active' : ''} {index === currentWordIndex && autoHintShown ? 'auto-hint' : ''}"
+        class="char {searchMode ? 'search-mode-active' : ''}"
         id="char-{index}"
         onmouseenter={onMouseEnterChar}
+        onclick={() => {
+          if (hintCharIndex !== index) {
+            // Different character clicked - set state to 1 and move hints
+            globalClickState = 1;
+            clickedCharIndex = index;
+            hintCharIndex = index;
+            updateCangjieCodeForChar(char);
+          } else {
+            // Same character clicked - advance state
+            const nextState = (globalClickState + 1) % 4; // 0, 1, 2, 3, then back to 0
+            globalClickState = nextState;
+
+            if (nextState === 1) {
+              // First click: show hints
+              clickedCharIndex = index;
+              updateCangjieCodeForChar(char);
+            } else if (nextState === 2) {
+              // Second click: show all cangjie code
+              revealedChars = cangjieChars.length;
+            } else if (nextState === 3) {
+              // Third click: hyperlink is now active
+            } else if (nextState === 0) {
+              // Fourth click: reset
+              clickedCharIndex = null;
+            }
+          }
+        }}
       >
-        {#if searchMode}
+        {#if searchMode || (hintCharIndex === index && globalClickState >= 2)}
           <a
             href={"https://www.hkcards.com/cj/cj-char-" + char + ".html"}
             target="_blank"
@@ -753,19 +861,20 @@ tryPressEnterFocus(e);
             <p>{char}</p>
           {/if}
         {/if}
-        <div class="hints-container">
-          <img
-            class="hints-picture"
-            src="https://www.hkcards.com/img/cj/{char}.png"
-          />
-          <p id="cangjie-code">
-            {#each [...cangjieChars, ...Array(Math.max(0, 5 - cangjieChars.length)).fill('')] as char, i}
-              <span>{i < revealedChars ? char : ''}</span>
-            {/each}
-          </p>
-        </div>
       </div>
     {/each}
+  </div>
+
+  <div class="hints-container" class:visible={globalClickState != 0} bind:this={hintsContainer}>
+    <img
+      class="hints-picture"
+      src={hintCharIndex !== null ? `https://www.hkcards.com/img/cj/${content[hintCharIndex]}.png` : ''}
+    />
+    <p id="cangjie-code">
+      {#each [...cangjieChars, ...Array(Math.max(0, 5 - cangjieChars.length)).fill('')] as char, i}
+        <span>{i < revealedChars ? char : ''}</span>
+      {/each}
+    </p>
   </div>
 
   {#if gameState === GameState.PLAY}
@@ -1290,6 +1399,10 @@ tryPressEnterFocus(e);
     box-shadow: 0px 0px 30px black;
   }
 
+  .hints-container.visible {
+    opacity: 100%;
+  }
+
   .hints-picture {
     width: 20rem;
   }
@@ -1307,10 +1420,6 @@ tryPressEnterFocus(e);
     #cangjie-code span {
     width: 4rem;
 
-  }
-
-  .char.auto-hint .hints-container {
-    opacity: 100%;
   }
 
   .settings-btn {
