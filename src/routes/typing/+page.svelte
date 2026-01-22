@@ -8,9 +8,9 @@
   import { timeLimits } from "./time-limits.json";
   import settingsIcon from '$lib/images/settings-svgrepo-com.svg';
   import "./passages.json";
-  import cangjieData from '$lib/data/cj3-30000.txt?raw';
+  import {cangjieMap} from '$lib/data/cangjiedata.js';
 
-  let cangjieMap = {};
+  // let cangjieMap = {};
 
   const cangjieRadicals = {
     'a': '日',
@@ -129,7 +129,7 @@
     y: 20,
   };
   onMount(() => {
-    initCangjieMap();
+    // initCangjieMap();
     setResultsPanelVisibility(false);
     // setSettingsVisibility(false);
     content = content.replace(/(?:\r\n|\r|\n)/g, "");
@@ -503,13 +503,12 @@ tryPressEnterFocus(e);
       }
     }, 5000);
   }
-
+    let hadWrongInput = $state(false);
   function validateInput(word) {
     if (gameState === GameState.FINISH) return;
     if (typeCancelled) {
       return;
     }
-    let hadWrongInput = false;
     for (let i = 0; i < word.length; i++) {
       currentWord = content[currentWordIndex];
       const char = word[i];
