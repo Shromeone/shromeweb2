@@ -186,23 +186,41 @@ tryPressEnterFocus(e);
     input = "";
     // Don't reset lastProcessedInput here - it should persist across input clears
   }
-  function adjustHintsPosition(event) {
-    const charElement = event.currentTarget;
+  function adjustHintsPosition(charElement) {
     const hintsContainer = charElement.querySelector(".hints-container");
+    if (!hintsContainer) return;
+
     const charRect = charElement.getBoundingClientRect();
     const hintsWidth = 336; // 21rem * 16px (assuming 1rem = 16px)
     const viewportWidth = window.innerWidth;
+    const charCenter = charRect.left + charRect.width / 2;
 
     // Reset position
     hintsContainer.style.right = "";
     hintsContainer.style.left = "";
+    hintsContainer.style.transform = "";
 
-    // Check if there's enough space to the right
-    if (charRect.right + hintsWidth <= viewportWidth) {
+    // Calculate space available on left and right
+    const spaceOnRight = viewportWidth - charRect.right;
+    const spaceOnLeft = charRect.left;
+
+    // If there's enough space on the right, position to the right
+    if (spaceOnRight >= hintsWidth) {
       hintsContainer.style.left = "0";
-    } else {
-      // Not enough space to the right, position to the left
+    }
+    // If there's enough space on the left, position to the left
+    else if (spaceOnLeft >= hintsWidth) {
       hintsContainer.style.right = "0";
+    }
+    // If neither side has enough space, center the hints container on the character
+    else {
+      const hintsCenterOffset = hintsWidth / 2;
+      const idealLeft = charCenter - hintsCenterOffset;
+
+      // Clamp the position to keep hints container within viewport
+      const clampedLeft = Math.max(10, Math.min(idealLeft, viewportWidth - hintsWidth - 10));
+
+      hintsContainer.style.left = `${clampedLeft - charRect.left}px`;
     }
   }
   function cancelInput() {
@@ -213,7 +231,7 @@ tryPressEnterFocus(e);
   function onMouseEnterChar(e) {
     if (!searchMode) return;
     cancelInput();
-    adjustHintsPosition(e);
+    adjustHintsPosition(e.currentTarget);
   }
 
   function toHalfWidth(x) {
@@ -462,6 +480,8 @@ tryPressEnterFocus(e);
     const charElement = document.querySelector(`#char-${index}`);
     if (charElement) {
       charElement.appendChild(hintsContainer);
+      // Adjust hints position after moving to ensure proper placement
+      adjustHintsPosition(charElement);
     }
   }
 
@@ -1255,6 +1275,23 @@ tryPressEnterFocus(e);
   .current-char p {
     color: skyblue;
     /* border: 1px solid skyblue; */
+  }
+
+  .current-char::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40%;
+    height: 2px;
+    background-color: skyblue;
+    animation: blink 2s infinite;
+  }
+
+  @keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
   }
 
   .inactive p {
