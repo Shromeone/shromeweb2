@@ -23,7 +23,7 @@
 {@render children?.()}
 
 <footer class="version-footer">
-  <p>Last updated: 2026-01-22</p>
+  <p>Last updated: 2026-01-23</p>
 </footer>
 
 <style>
