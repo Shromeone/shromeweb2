@@ -93,11 +93,20 @@
   let timeLimit = $state(60);
   let fontSelect = $state("LXGW WenKai TC");
 
+  const HintState = Object.freeze({
+    HIDDEN: 0,
+    SHOWN: 1,
+    URL: 2,
+  });
+
+  let hintState = $state(HintState.HIDDEN);
+  let hintCharIndex = $state(0);
   let autoHintTimeout = null;
-  let autoHintShown = $state(false);
+  let revealTimeout = null;
   let autoHintMode = $state('timed');
   let autoHintTimeoutSeconds = $state(5);
-  let revealInterval = null;
+  let cangjieMode = $state('timed');
+  let revealCangjieCodeTimeoutSeconds = $state(3);
 
   let points = $state(0);
   let basePoints = $state(0);
@@ -113,11 +122,7 @@
   let cangjieCode = $state('');
   let revealedChars = $state(0);
   let cangjieChars = $derived(getChineseCangjieCode(cangjieCode).split(''));
-  let clickedCharIndex = $state(null);
   let hintsContainer = $state();
-  // let hintCharIndex = $derived(clickedCharIndex !== null ? clickedCharIndex : (autoHintShown ? currentWordIndex : null));
-  let hintCharIndex = $state(0);
-  let globalClickState = $state(0);
 
 
   let isTimeUp = false;
@@ -229,10 +234,10 @@ tryPressEnterFocus(e);
     focusInputInterval = setInterval(tryFocus, 1000);
     searchMode = false; // Disable search mode when typing starts
     if (autoHintMode === 'always') {
-      autoHintShown = true;
-      startRevealInterval();
+      enterShownState();
+    } else if (autoHintMode === 'timed') {
+      startAutoHintTimer();
     }
-    handleAutoHintLogic();
     // Scroll to position the first character at 30% from top
     setTimeout(() => updateScroll(), 100);
   }
@@ -276,10 +281,10 @@ tryPressEnterFocus(e);
     clearInterval(updateInfoInterval);
     clearInterval(focusInputInterval);
     clearTimeout(autoHintTimeout);
+    clearTimeout(revealTimeout);
     autoHintTimeout = null;
-    clearInterval(revealInterval);
-    revealInterval = null;
-    autoHintShown = false;
+    revealTimeout = null;
+    enterHiddenState();
     gameState = GameState.FINISH;
     console.log(wrongWords, content.length);
     updateInfo();
@@ -319,6 +324,17 @@ tryPressEnterFocus(e);
   function keyDown(e) {
   typeCancelled = false;
 
+  if (gameState === GameState.PLAY) {
+    if (hintCharIndex !== currentWordIndex) {
+      updateCangjieCode();
+      if (autoHintMode === 'always') {
+        enterShownState();
+      } else {
+        enterHiddenState();
+      }
+    }
+  }
+
   if (e.key !== "Enter" && e.key !== "Escape" && !e.ctrlKey && !e.metaKey) {
     searchMode = false;
   }
@@ -338,29 +354,15 @@ tryPressEnterFocus(e);
   }
 
   if (e.key === 'Shift') {
-    // Simulate clicking on the character with hints, or current character if no hints
-    const targetIndex = hintCharIndex !== null ? hintCharIndex : currentWordIndex;
-    const char = content[targetIndex];
-    const nextState = (globalClickState + 1) % 4;
-    globalClickState = nextState;
-
-    if (nextState === 1) {
-      clickedCharIndex = targetIndex;
-      updateCangjieCodeForChar(char);
-    } else if (nextState === 2) {
-      revealedChars = cangjieChars.length;
-    } else if (nextState === 3) {
-      // hyperlink active
-    } else if (nextState === 0) {
-      clickedCharIndex = null;
+    if (hintState === HintState.HIDDEN) {
+      enterShownState();
+    } else if (hintState === HintState.SHOWN) {
+      enterUrlState();
     }
   }
 }
 
   function halfInput(e) {
-    clickedCharIndex = null; // Reset clicked hint on any input
-    globalClickState = 0; // Reset click states on any input
-
     // Handle different input types
     if (e.inputType === "deleteContentBackward") {
       // If deleting during composition, don't process it
@@ -446,8 +448,6 @@ tryPressEnterFocus(e);
     cangjieCode = currentWord ? cangjieMap[currentWord] || '' : '';
     revealedChars = 0;
     console.log("update cangjie code");
-    clearInterval(revealInterval);
-    revealInterval = null;
   }
 
   function updateCangjieCodeForChar(char) {
@@ -455,8 +455,6 @@ tryPressEnterFocus(e);
     cangjieCode = cangjieMap[char] || '';
     revealedChars = 0;
     console.log("update cangjie code for char");
-    clearInterval(revealInterval);
-    revealInterval = null;
   }
 
   function moveHintsToChar(index) {
@@ -467,44 +465,55 @@ tryPressEnterFocus(e);
     }
   }
 
-  // $effect(() => {
-  //   if (hintCharIndex !== null) {
-  //     moveHintsToChar(hintCharIndex);
-  //     const char = content[hintCharIndex];
-  //     updateCangjieCodeForChar(char);
-  //     // Start reveal interval when hints move to current character
-  //     if (hintCharIndex === currentWordIndex && autoHintShown) {
-  //       startRevealInterval();
-  //     }
-  //   }
-  // });
-
-  $effect(() => {
-    if (autoHintShown && hintCharIndex === currentWordIndex) {
-      if (globalClickState === 0) {
-        globalClickState = 1;
-      }
-    }
-  });
-
-  function startRevealInterval() {
-    if (revealedChars >= cangjieChars.length) {
-      globalClickState = 2; // Set as second click when already full
-      return;
-    }
-    if (revealInterval) clearInterval(revealInterval);
-    revealInterval = setInterval(() => {
-      revealedChars++;
-      console.log(`add reveal char to ${revealedChars}`);
-      if (revealedChars >= cangjieChars.length) {
-        clearInterval(revealInterval);
-        revealInterval = null;
-        globalClickState = 2; // Set as second click when fully revealed
-      }
-    }, 5000);
+  function onStateChange() {
+    clearTimeout(autoHintTimeout);
+    clearTimeout(revealTimeout);
+    autoHintTimeout = null;
+    revealTimeout = null;
   }
-    let hadWrongInput = $state(false);
+
+  function enterHiddenState() {
+    onStateChange();
+    hintState = HintState.HIDDEN;
+    revealedChars = 0;
+  }
+
+  function enterShownState() {
+    onStateChange();
+    hintState = HintState.SHOWN;
+    if (cangjieMode === 'always') {
+      revealedChars = cangjieChars.length;
+      enterUrlState();
+    } else {
+      revealedChars = 0;
+      function revealNext() {
+        revealedChars++;
+        if (revealedChars >= cangjieChars.length) {
+          enterUrlState();
+        } else {
+          revealTimeout = setTimeout(revealNext, revealCangjieCodeTimeoutSeconds * 1000);
+        }
+      }
+      revealTimeout = setTimeout(revealNext, revealCangjieCodeTimeoutSeconds * 1000);
+    }
+  }
+
+  function enterUrlState() {
+    onStateChange();
+    hintState = HintState.URL;
+    revealedChars = cangjieChars.length;
+  }
+
+  function startAutoHintTimer() {
+    if (autoHintMode === 'timed' && gameState === GameState.PLAY && currentWordIndex < content.length) {
+      autoHintTimeout = setTimeout(() => {
+        enterShownState();
+      }, autoHintTimeoutSeconds * 1000);
+    }
+  }
+
   function validateInput(word) {
+    let hadWrongInput = $state(false);
     if (gameState === GameState.FINISH) return;
     if (typeCancelled) {
       return;
@@ -529,36 +538,34 @@ tryPressEnterFocus(e);
     updateCangjieCode();
 
     if (gameState !== GameState.FINISH) calcTempPoints();
-    handleAutoHintLogic();
-  }
-  
-  function handleAutoHintLogic() {
-    
-    // Auto-hint logic
+
     if (!hadWrongInput) {
-      // Only reset timer on correct input
-      if (autoHintTimeout) clearTimeout(autoHintTimeout);
-      autoHintShown = autoHintMode === 'always';
-      if (autoHintMode === 'timed' && gameState === GameState.PLAY && currentWordIndex < content.length) {
-        autoHintTimeout = setTimeout(() => {
-          autoHintShown = true;
-          startRevealInterval();
-
-        }, autoHintTimeoutSeconds * 1000);
+      // On correct input (finished character), hide hint and set timeout
+      if (autoHintMode !== 'always') {
+        enterHiddenState();
+        startAutoHintTimer();
       }
+      // For 'always' mode, keep hints shown for next character
     } else {
-      if (autoHintShown) {
-        startRevealInterval();
+      // On wrong input
+      if (hintState === HintState.HIDDEN) {
+        // Do nothing
+      } else if (hintState === HintState.URL) {
+        enterShownState();
+      } else if (hintState === HintState.SHOWN) {
+        // Reset reveal timer
+        clearTimeout(revealTimeout);
+        revealedChars = 0;
+        function revealNext() {
+          revealedChars++;
+          if (revealedChars >= cangjieChars.length) {
+            enterUrlState();
+          } else {
+            revealTimeout = setTimeout(revealNext, revealCangjieCodeTimeoutSeconds * 1000);
+          }
+        }
+        revealTimeout = setTimeout(revealNext, revealCangjieCodeTimeoutSeconds * 1000);
       }
-      // On wrong input, don't reset timer, but ensure it's running if not already
-      if (autoHintMode === 'timed' && gameState === GameState.PLAY && currentWordIndex < content.length) {
-        autoHintTimeout = setTimeout(() => {
-          autoHintShown = true;
-          startRevealInterval();
-
-        }, autoHintTimeoutSeconds * 1000);
-      }
-      // For always mode, autoHintShown is already set
     }
   }
 
@@ -681,10 +688,10 @@ tryPressEnterFocus(e);
     clearInterval(updateInfoInterval);
     clearInterval(focusInputInterval);
     clearTimeout(autoHintTimeout);
+    clearTimeout(revealTimeout);
     autoHintTimeout = null;
-    clearInterval(revealInterval);
-    revealInterval = null;
-    autoHintShown = false;
+    revealTimeout = null;
+    enterHiddenState();
     updateTimer(0);
     updateInputBoxPos();
     updateScroll();
@@ -800,33 +807,21 @@ tryPressEnterFocus(e);
         onmouseenter={onMouseEnterChar}
         onclick={() => {
           if (hintCharIndex !== index) {
-            // Different character clicked - set state to 1 and move hints
-            globalClickState = 1;
-            clickedCharIndex = index;
+            // Different character clicked - move hints to that character, set to shown
             hintCharIndex = index;
             updateCangjieCodeForChar(char);
+            enterShownState();
           } else {
-            // Same character clicked - advance state
-            const nextState = (globalClickState + 1) % 4; // 0, 1, 2, 3, then back to 0
-            globalClickState = nextState;
-
-            if (nextState === 1) {
-              // First click: show hints
-              clickedCharIndex = index;
-              updateCangjieCodeForChar(char);
-            } else if (nextState === 2) {
-              // Second click: show all cangjie code
-              revealedChars = cangjieChars.length;
-            } else if (nextState === 3) {
-              // Third click: hyperlink is now active
-            } else if (nextState === 0) {
-              // Fourth click: reset
-              clickedCharIndex = null;
+            // Same character clicked
+            if (hintState === HintState.SHOWN) {
+              enterUrlState();
+            } else if (hintState === HintState.HIDDEN && index === currentWordIndex) {
+              enterShownState();
             }
           }
         }}
       >
-        {#if searchMode || (hintCharIndex === index && globalClickState >= 2)}
+        {#if searchMode || (hintCharIndex === index && hintState === HintState.URL)}
           <a
             href={"https://www.hkcards.com/cj/cj-char-" + char + ".html"}
             target="_blank"
@@ -864,10 +859,10 @@ tryPressEnterFocus(e);
     {/each}
   </div>
 
-  <div class="hints-container" class:visible={globalClickState != 0} bind:this={hintsContainer}>
+  <div class="hints-container" class:visible={hintState !== HintState.HIDDEN} bind:this={hintsContainer}>
     <img
       class="hints-picture"
-      src={hintCharIndex !== null ? `https://www.hkcards.com/img/cj/${content[hintCharIndex]}.png` : ''}
+      src={hintCharIndex >= 0 ? `https://www.hkcards.com/img/cj/${content[hintCharIndex]}.png` : ''}
     />
     <p id="cangjie-code">
       {#each [...cangjieChars, ...Array(Math.max(0, 5 - cangjieChars.length)).fill('')] as char, i}
@@ -947,6 +942,8 @@ tryPressEnterFocus(e);
     </div>
     <div class="setting">
       <h3>自動提示</h3>
+      <p class="reminder-text">可按SHIFT 或點擊文字以顯示提示</p>
+      <h4>拆字圖解</h4>
       <select bind:value={autoHintMode} id="auto-hint-mode">
         <option value="always">總是顯示</option>
         <option value="timed">定時顯示</option>
@@ -954,6 +951,17 @@ tryPressEnterFocus(e);
       {#if autoHintMode === 'timed'}
         <input type="range" min="1" max="20" bind:value={autoHintTimeoutSeconds} id="auto-hint-timeout" />
         <span>{autoHintTimeoutSeconds}秒</span>
+      {/if}
+    </div>
+    <div class="setting">
+      <h4>倉頡碼</h4>
+      <select bind:value={cangjieMode} id="cangjie-mode">
+        <option value="always">總是顯示</option>
+        <option value="timed">定時顯示</option>
+      </select>
+      {#if cangjieMode === 'timed'}
+        <input type="range" min="1" max="10" bind:value={revealCangjieCodeTimeoutSeconds} id="reveal-timeout" />
+        <span>{revealCangjieCodeTimeoutSeconds}秒</span>
       {/if}
     </div>
   </div>
@@ -1189,6 +1197,10 @@ tryPressEnterFocus(e);
     position: relative;
   }
 
+  .reminder-text {
+    color: lightgrey;
+  }
+
   .test-content .wrong {
     color: rgb(221, 59, 59);
     /* border: 1px solid rgb(194, 143, 143); */
@@ -1385,9 +1397,9 @@ tryPressEnterFocus(e);
     bottom: 5.5rem;
     /* left: 4rem; */
     width: 21rem;
-    height: 6rem;
+    height: 8rem;
     background-color: black;
-    justify-content: center;
+    justify-content: top;
     align-items: center;
     z-index: 100;
     position: absolute;
