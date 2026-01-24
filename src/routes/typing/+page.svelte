@@ -1055,19 +1055,19 @@ tryPressEnterFocus(e);
 
   <div class="bottom-left-buttons">
     {#if gameState === GameState.PLAY}
-      <button id="end-test-btn" class="bottom-btn" onmouseenter={cancelInput} onclick={finishGame}
+      <button id="end-test-btn" class="btn-danger bottom-btn" onmouseenter={cancelInput} onclick={finishGame}
         >結束遊戲</button
       >
     {/if}
     
     {#if gameState !== GameState.START}
-      <button class="bottom-btn" onmouseenter={cancelInput} onclick={restart}
+      <button class="btn-secondary bottom-btn" onmouseenter={cancelInput} onclick={restart}
         >重新開始</button
       >
     {/if}
     
     {#if gameState === GameState.FINISH}
-      <button class="bottom-btn" onclick={() => setResultsPanelVisibility(true)}
+      <button class="btn-primary bottom-btn" onclick={() => setResultsPanelVisibility(true)}
         >查看成績</button
       >
     {/if}
@@ -1223,7 +1223,7 @@ tryPressEnterFocus(e);
     display: flex;
     flex-direction: column;
     gap: 100px;
-    background-color: rgb(91, 97, 148);
+    background: rgb(61, 61, 61);
     width: 60%;
     padding: 1.5em 3em 1em 3em;
     border-radius: 2rem;
@@ -1513,21 +1513,27 @@ tryPressEnterFocus(e);
     flex-wrap: wrap;
   }
 
+  /* Override color scheme styles for bottom buttons */
   .bottom-btn {
     padding: 0.8em 1.5em;
     font-size: 1rem;
     border-radius: 1rem;
-    border: 2px solid rgba(255, 255, 255, 0.5);
-    background-color: rgba(91, 97, 148, 0.8);
+    border: none;
     color: white;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all var(--transition-normal);
+    box-shadow: var(--shadow-sm);
   }
 
   .bottom-btn:hover {
-    background-color: rgba(91, 97, 148, 1);
-    border-color: rgba(255, 255, 255, 0.8);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
     opacity: 80%;
+  }
+
+  .bottom-btn:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
   }
 
   /* Mobile styles for bottom buttons - using aspect ratio */

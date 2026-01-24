@@ -20,13 +20,14 @@
   .checkbox button {
     color: white;
     border: none;
+    font-size: large;
     background-color: transparent;
     border-radius: 3rem;
     background-color: rgb(75, 75, 75);
   }
 
   .checkbox button.checked {
-    background-color: rgb(42, 207, 0);
+    background-color: rgb(73, 151, 187);
   }
 
   .checkbox {

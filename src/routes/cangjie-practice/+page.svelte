@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import questionsData from './cangjie-practice-questions.json';
   import settingsIcon from '$lib/images/settings-svgrepo-com.svg';
+  import Checkbox from '../text-replacer/Checkbox.svelte';
 
   const cangjieMap = {};
   for (const q of questionsData) {
@@ -277,28 +278,38 @@
   <div class="setting">
     <h3>題目類別</h3>
     <div class="category-buttons">
-      <button class="category-btn {basicChecked ? 'checked' : 'unchecked'}" on:click={() => { basicChecked = !basicChecked; handleCheckboxChange(); }}>基本</button>
-      <button class="category-btn {auxiliaryChecked ? 'checked' : 'unchecked'}" on:click={() => { auxiliaryChecked = !auxiliaryChecked; handleCheckboxChange(); }}>輔助</button>
-      <button class="category-btn {radicalChecked ? 'checked' : 'unchecked'}" on:click={() => { radicalChecked = !radicalChecked; handleCheckboxChange(); }}>部首</button>
-      <button class="category-btn {twoChecked ? 'checked' : 'unchecked'}" on:click={() => { twoChecked = !twoChecked; handleCheckboxChange(); }}>二字</button>
-      <button class="category-btn {hardChecked ? 'checked' : 'unchecked'}" on:click={() => { hardChecked = !hardChecked; handleCheckboxChange(); }}>難字</button>
+      <Checkbox click={(checked) => { basicChecked = checked; handleCheckboxChange(); }}>
+        基本
+      </Checkbox>
+      <Checkbox click={(checked) => { auxiliaryChecked = checked; handleCheckboxChange(); }}>
+        輔助
+      </Checkbox>
+      <Checkbox click={(checked) => { radicalChecked = checked; handleCheckboxChange(); }}>
+        部首
+      </Checkbox>
+      <Checkbox click={(checked) => { twoChecked = checked; handleCheckboxChange(); }}>
+        二字
+      </Checkbox>
+      <Checkbox click={(checked) => { hardChecked = checked; handleCheckboxChange(); }}>
+        難字
+      </Checkbox>
     </div>
   </div>
   <div class="setting">
     <h3>錯誤X次後提示</h3>
     <div class="threshold-buttons">
-      <button class="threshold-btn {hintThreshold === 0 ? 'selected' : ''}" on:click={() => hintThreshold = 0}>經常出現</button>
-      <button class="threshold-btn {hintThreshold === 1 ? 'selected' : ''}" on:click={() => hintThreshold = 1}>1 次</button>
-      <button class="threshold-btn {hintThreshold === 2 ? 'selected' : ''}" on:click={() => hintThreshold = 2}>2 次</button>
-      <button class="threshold-btn {hintThreshold === 3 ? 'selected' : ''}" on:click={() => hintThreshold = 3}>3 次</button>
-      <button class="threshold-btn {hintThreshold === 5 ? 'selected' : ''}" on:click={() => hintThreshold = 5}>5 次</button>
+      <button class="multiple-choice-btn {hintThreshold === 0 ? 'selected' : ''}" on:click={() => hintThreshold = 0}>經常出現</button>
+      <button class="multiple-choice-btn {hintThreshold === 1 ? 'selected' : ''}" on:click={() => hintThreshold = 1}>1 次</button>
+      <button class="multiple-choice-btn {hintThreshold === 2 ? 'selected' : ''}" on:click={() => hintThreshold = 2}>2 次</button>
+      <button class="multiple-choice-btn {hintThreshold === 3 ? 'selected' : ''}" on:click={() => hintThreshold = 3}>3 次</button>
+      <button class="multiple-choice-btn {hintThreshold === 5 ? 'selected' : ''}" on:click={() => hintThreshold = 5}>5 次</button>
     </div>
   </div>
   <div class="setting">
     <h3>提示類型</h3>
     <div class="hint-type-buttons">
-      <button class="hint-type-btn {hintType === 'alphabets' ? 'selected' : ''}" on:click={() => { hintType = 'alphabets'; updateHintText(); }}>字母</button>
-      <button class="hint-type-btn {hintType === 'radicals' ? 'selected' : ''}" on:click={() => { hintType = 'radicals'; updateHintText(); }}>倉頡碼</button>
+      <button class="multiple-choice-btn {hintType === 'alphabets' ? 'selected' : ''}" on:click={() => { hintType = 'alphabets'; updateHintText(); }}>字母</button>
+      <button class="multiple-choice-btn {hintType === 'radicals' ? 'selected' : ''}" on:click={() => { hintType = 'radicals'; updateHintText(); }}>倉頡碼</button>
     </div>
   </div>
   <div class="setting">
@@ -315,11 +326,11 @@
 
 <style>
   :global(:root) {
-    --current-font-size: 7rem;
-    --prev-next-font-size: 4rem;
-    --small-font-size: 1rem;
-    --translate-distance: 7rem;
-    --translate-large: 9rem;
+    --current-font-size: clamp(3vw, 10rem, 28vw);
+    --prev-next-font-size: clamp(1.5vw, 5rem, 16vw);
+    --small-font-size: clamp(1.5vw, 5rem, 4vw);
+    --translate-distance: clamp(3vw, 10rem, 28vw);
+    --translate-large: clamp(6vw, 15rem, 36vw);
   }
 
   .container {
@@ -337,11 +348,12 @@
   }
 
   .question-container {
+    width: 1rem;
+    height: var(--current-font-size);
     position: relative;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 6rem;
     margin: 3rem 0;
     /* overflow: hidden; */
   }
@@ -420,15 +432,15 @@
   }
 
   .input-field {
-    font-size: 2rem;
+    font-size: 3rem;
     padding: 10px;
-    width: 200px;
+    width: 12rem;
     text-align: center;
     margin-bottom: 20px;
   }
 
   .hint {
-    font-size: 1.5rem;
+    font-size: 3vw;
     margin-top: 10px;
     color: lightblue;
   }
@@ -442,12 +454,12 @@
   }
 
   .feedback {
-    font-size: 1.5rem;
+    font-size: 3vw;
     margin-top: 20px;
   }
 
   .warning {
-    font-size: 1.5rem;
+    font-size: 3vw;
     margin-top: 10px;
     color: orange;
   }
@@ -462,28 +474,10 @@
 
   .category-buttons {
     display: flex;
+    flex-direction: row;
     flex-wrap: wrap;
-    justify-content: center;
+    gap: 0.625rem;
     margin-bottom: 0.625rem;
-  }
-
-  .category-btn {
-    border: 1px solid;
-    background: none;
-    padding: 0.3125rem 0.625rem;
-    margin: 0 0.3125rem;
-    cursor: pointer;
-    font-size: 1rem;
-  }
-
-  .category-btn.unchecked {
-    color: grey;
-    border-color: grey;
-  }
-
-  .category-btn.checked {
-    color: lightblue;
-    border-color: lightblue;
   }
 
   .threshold-buttons {
@@ -493,49 +487,11 @@
     margin-bottom: 0.625rem;
   }
 
-  .threshold-btn {
-    border: 1px solid;
-    background: none;
-    padding: 0.3125rem 0.625rem;
-    margin: 0 0.3125rem;
-    cursor: pointer;
-    font-size: 1rem;
-  }
-
-  .threshold-btn.selected {
-    color: lightblue;
-    border-color: lightblue;
-  }
-
-  .threshold-btn:not(.selected) {
-    color: grey;
-    border-color: grey;
-  }
-
   .hint-type-buttons {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     margin-bottom: 0.625rem;
-  }
-
-  .hint-type-btn {
-    border: 1px solid;
-    background: none;
-    padding: 0.3125rem 0.625rem;
-    margin: 0 0.3125rem;
-    cursor: pointer;
-    font-size: 1rem;
-  }
-
-  .hint-type-btn.selected {
-    color: lightblue;
-    border-color: lightblue;
-  }
-
-  .hint-type-btn:not(.selected) {
-    color: grey;
-    border-color: grey;
   }
 
   .image-toggle-buttons {
@@ -620,7 +576,7 @@
     position: fixed;
     top: 0;
     right: 0;
-    width: 20rem;
+    width: 50vw;
     height: 100vh;
     background: rgb(61, 61, 61);
     transform: translateX(100%);
@@ -628,6 +584,8 @@
     z-index: 101;
     padding: 1.25rem;
     box-sizing: border-box;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   .settings-panel.open {
@@ -677,22 +635,19 @@
   /* Mobile responsive styles - using aspect ratio */
   @media (max-aspect-ratio: 1/1)  {
     :global(:root) {
-      --current-font-size: 9.6rem;
-      --prev-next-font-size: 4.8rem;
-      --small-font-size: 2.4rem;
-      --translate-distance: 9.6rem;
-      --translate-large: 14.4rem;
+      --current-font-size: clamp(19.2vw, 4rem, 38.4vw);
+      --prev-next-font-size: clamp(9.6vw, 2rem, 19.2vw);
+      --small-font-size: clamp(4.8vw, 1rem, 9.6vw);
+      --translate-distance: clamp(19.2vw, 4rem, 38.4vw);
+      --translate-large: clamp(28.8vw, 5rem, 57.6vw);
     }
 
-    .question-container {
-      height: var(--current-font-size);
-    }
 
     .settings-panel {
-      left: 0;
-      right: auto;
-      width: 80vw;
-      transform: translateX(-100%);
+      right: 0;
+      left: auto;
+      width: 100vw;
+      transform: translateX(100%);
     }
 
     .settings-panel.open {
