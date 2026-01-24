@@ -9,6 +9,7 @@
   import settingsIcon from '$lib/images/settings-svgrepo-com.svg';
   import "./passages.json";
   import {cangjieMap} from '$lib/data/cangjiedata.js';
+  import { areCharactersEquivalent } from "$lib/utils/character-mapping.js";
 
   // let cangjieMap = {};
 
@@ -40,8 +41,6 @@
     'y': '卜',
     'z': '重'
   };
-
-
 
   const GameState = Object.freeze({
     START: 0,
@@ -158,7 +157,6 @@ tryPressEnterFocus(e);
       // Don't focus input if clicking on a link or character
       if (e.target.closest('a') || e.target.closest('.char')) return;
       e.preventDefault();
-      console.log("focused");
       inputBox.focus();};
     document.onkeydown = (e) => {
       tryPressEnterFocus(e);
@@ -167,7 +165,6 @@ tryPressEnterFocus(e);
       if (settingsOpen) return;
       if (e.target.closest('a') || e.target.closest('.char')) return;
       e.preventDefault();
-      console.log("focused");
       inputBox.focus();
     };
     
@@ -175,7 +172,10 @@ tryPressEnterFocus(e);
     document.addEventListener('keydown', handleEnterKey);
     
     // Close settings panel when clicking outside
-    document.addEventListener('click', handleOutsideClick);
+    document.addEventListener('click', handleDocumentClick);
+    
+    // Close results panel when clicking outside
+    document.addEventListener('click', handleResultsOutsideClick);
   });
 
   onDestroy(() => {
@@ -201,7 +201,6 @@ tryPressEnterFocus(e);
     if (document.activeElement === inputBox) return;
     if (document.activeElement.localName === "button") return;
     if (settingsOpen) return;
-    console.log(gameState);
     if (gameState === GameState.FINISH) return; // Don't focus if not in active gameplay
     inputBox.focus();
   }
@@ -213,7 +212,6 @@ tryPressEnterFocus(e);
   }
 
   function clearInput() {
-    // console.log("cleared input");
     inputBox.innerHTML = "";
     input = "";
     // Don't reset lastProcessedInput here - it should persist across input clears
@@ -341,7 +339,7 @@ tryPressEnterFocus(e);
     animationTimeouts.forEach(timeout => clearTimeout(timeout));
     animationTimeouts = [];
 
-    // Reset animation states
+    // IMMEDIATELY reset all animation states to their initial positions
     showSpeed = false;
     showAccuracy = false;
     showGradeLabel = false;
@@ -349,38 +347,41 @@ tryPressEnterFocus(e);
     animatedWPM = 0;
     animatedAccuracy = 0;
 
-    let delay = 0;
+    // Force immediate DOM update by triggering a tick
+    tick().then(() => {
+      let delay = 0;
 
-    // 1. Fade in "speed" label along with WPM (0.3s)
-    const speedFadeIn = setTimeout(() => {
-      showSpeed = true;
-      // Start WPM counting animation
-      startWPMCounting();
-    }, delay);
-    animationTimeouts.push(speedFadeIn);
-    delay += 300;
+      // 1. Fade in "speed" label along with WPM (0.3s)
+      const speedFadeIn = setTimeout(() => {
+        showSpeed = true;
+        // Start WPM counting animation
+        startWPMCounting();
+      }, delay);
+      animationTimeouts.push(speedFadeIn);
+      delay += 500;
 
-    // 2. Fade in accuracy (0.3s) while WPM continues counting
-    const accuracyFadeIn = setTimeout(() => {
-      showAccuracy = true;
-      // Start accuracy counting animation
-      startAccuracyCounting();
-    }, delay);
-    animationTimeouts.push(accuracyFadeIn);
-    delay += 300;
+      // 2. Fade in accuracy (0.3s) while WPM continues counting
+      const accuracyFadeIn = setTimeout(() => {
+        showAccuracy = true;
+        // Start accuracy counting animation
+        startAccuracyCounting();
+      }, delay);
+      animationTimeouts.push(accuracyFadeIn);
+      delay += 500;
 
-    // 3. Fade in "grade" label only (0.3s)
-    const gradeLabelFadeIn = setTimeout(() => {
-      showGradeLabel = true;
-    }, delay);
-    animationTimeouts.push(gradeLabelFadeIn);
-    delay += 300;
+      // 3. Fade in "grade" label only (0.3s)
+      const gradeLabelFadeIn = setTimeout(() => {
+        showGradeLabel = true;
+      }, delay);
+      animationTimeouts.push(gradeLabelFadeIn);
+      delay += 800;
 
-    // 4. Stamping animation for grade info (1s)
-    const gradeStamping = setTimeout(() => {
-      showGradeInfo = true;
-    }, delay);
-    animationTimeouts.push(gradeStamping);
+      // 4. Stamping animation for grade info (1s)
+      const gradeStamping = setTimeout(() => {
+        showGradeInfo = true;
+      }, delay);
+      animationTimeouts.push(gradeStamping);
+    });
   }
 
   function startWPMCounting() {
@@ -574,14 +575,12 @@ tryPressEnterFocus(e);
     moveHintsToChar(hintCharIndex);
     cangjieCode = currentWord ? cangjieMap[currentWord] || '' : '';
     revealedChars = 0;
-    console.log("update cangjie code");
   }
 
   function updateCangjieCodeForChar(char) {
     moveHintsToChar(hintCharIndex);
     cangjieCode = cangjieMap[char] || '';
     revealedChars = 0;
-    console.log("update cangjie code for char");
   }
 
   function moveHintsToChar(index) {
@@ -650,7 +649,9 @@ tryPressEnterFocus(e);
     for (let i = 0; i < word.length; i++) {
       currentWord = content[currentWordIndex];
       const char = word[i];
-      if (!wordCorrect(char)) {
+      
+      // Use character mapping to check if input is correct
+      if (!areCharactersEquivalent(char, currentWord)) {
         wrongIndexes = [...wrongIndexes, currentWordIndex];
         hadWrongInput = true;
       } else {
@@ -735,9 +736,7 @@ tryPressEnterFocus(e);
     const speedPoints = Object.keys(bonus.speed);
     speedPoints.sort((a, b) => Number(b) - Number(a));
     for (let speed of speedPoints) {
-      // console.log(WPM, Number(speed));
       if (WPM >= Number(speed)) {
-        // console.log(`speed: ${bonus.speed[speed]}`);
         speedCutoff = speed;
         speedMultiplier = bonus.speed[speed];
         return Math.round(basePoints * speedMultiplier);
@@ -750,9 +749,7 @@ tryPressEnterFocus(e);
     const accuracyPoints = Object.keys(bonus.accuracy);
     accuracyPoints.sort((a, b) => Number(b) - Number(a));
     for (let accu of accuracyPoints) {
-      // console.log(accuracy * 100, Number(accu));
       if (accuracy * 100 >= Number(accu)) {
-        // console.log(`accu: ${bonus.accuracy[accu]}`);
         accuracyCutoff = accu;
         accuracyMultiplier = bonus.accuracy[accu];
         return Math.round(basePoints * accuracyMultiplier);
@@ -835,7 +832,6 @@ tryPressEnterFocus(e);
   }
 
   function setResultsPanelVisibility(show = false) {
-    console.log(resultsScreen);
     if (show) {
       resultsScreen.classList.remove("hidden");
     } else {
@@ -870,20 +866,50 @@ tryPressEnterFocus(e);
     isSpinning = true;
     settingsOpen = !settingsOpen;
     setTimeout(() => isSpinning = false, 300);
+    
+    // Immediately hide animation elements when settings panel opens
+    if (isOpening) {
+      showSpeed = false;
+      showAccuracy = false;
+      showGradeLabel = false;
+      showGradeInfo = false;
+      animatedWPM = 0;
+      animatedAccuracy = 0;
+    }
   }
 
-  function handleOutsideClick(e) {
+  // Alternative click handler for better reliability
+  function handleDocumentClick(e) {
     // Close settings panel when clicking outside of it
     if (settingsOpen) {
       const settingsPanel = document.querySelector('.settings-panel');
       const settingsBtn = document.querySelector('.settings-btn');
-      const overlay = document.querySelector('.overlay');
       
-      // Check if the click target is not within the settings panel, settings button, or overlay
-      if (!settingsPanel.contains(e.target) && 
-          !settingsBtn.contains(e.target) && 
-          !overlay.contains(e.target)) {
-        handleSettingsToggle();
+      if (settingsPanel && settingsBtn) {
+        const isClickOutside =
+          !settingsPanel.contains(e.target) && 
+          !settingsBtn.contains(e.target);
+        if (isClickOutside) {
+          e.preventDefault();
+          e.stopPropagation();
+          handleSettingsToggle();
+        }
+      }
+    }
+  }
+
+
+  function handleResultsOutsideClick(e) {
+    // Close results panel when clicking outside of it
+    if (gameState === GameState.FINISH && !resultsScreen.classList.contains('hidden')) {
+      const resultsPanel = document.querySelector('.results-panel');
+      const resultsButtons = document.querySelectorAll('.panel-buttons button');
+      
+      // Check if the click target is not within the results panel, its buttons, or any bottom button
+      if (!resultsPanel.contains(e.target) && 
+          !Array.from(resultsButtons).some(btn => btn.contains(e.target)) &&
+          !e.target.closest('.bottom-btn')) {
+        setResultsPanelVisibility(false);
       }
     }
   }
@@ -1029,7 +1055,7 @@ tryPressEnterFocus(e);
 
   <div class="bottom-left-buttons">
     {#if gameState === GameState.PLAY}
-      <button class="bottom-btn" onmouseenter={cancelInput} onclick={finishGame}
+      <button id="end-test-btn" class="bottom-btn" onmouseenter={cancelInput} onclick={finishGame}
         >結束遊戲</button
       >
     {/if}
@@ -1272,35 +1298,39 @@ tryPressEnterFocus(e);
   .result-label {
     opacity: 0;
     transform: translateY(10px);
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transition: none;
   }
 
   .result-label.fade-in {
     opacity: 1;
     transform: translateY(0);
+    transition: opacity 0.3s ease, transform 0.3s ease;
   }
 
   .result-value {
     opacity: 0;
+    text-align: center;
     transform: translateY(10px);
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transition: none;
   }
 
   .result-value.fade-in {
     opacity: 1;
     transform: translateY(0);
+    transition: opacity 0.3s ease, transform 0.3s ease;
   }
 
   .grade-value {
     font-size: 5vh !important;
     opacity: 0;
-    transform: scale(2) translateY(-50%);
-    /* transition: all 1s cubic-bezier(0.175, 0.885, 0.32, 1.275); */
+    transform: scale(2);
+    transition: none;
   }
 
   .grade-value.stamping {
     opacity: 1;
-    transform: scale(1) translateY(0);
+    transform: scale(1);
+    transition: all 1s ease-out;
   }
 
   .panel-buttons {

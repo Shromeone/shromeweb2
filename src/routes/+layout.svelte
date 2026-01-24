@@ -1,6 +1,7 @@
 <script>
   import "../app.css";
-  /** @type {{children?: import('svelte').Snippet}} */
+  import { injectAnalytics } from '@vercel/analytics/sveltekit';
+  injectAnalytics();
   let { children } = $props();
 </script>
 
@@ -22,6 +23,9 @@
 </nav>
 {@render children?.()}
 
+<body>
+  {children}
+</body>
 <footer class="version-footer">
   <p>Last updated: 2026-01-23</p>
 </footer>
