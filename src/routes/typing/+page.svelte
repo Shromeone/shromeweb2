@@ -421,7 +421,8 @@ tryPressEnterFocus(e);
     }
 
     // Don't process if this input was already processed (duplicate prevention)
-    if (e.data && e.data === lastProcessedInput) {
+    // Only prevent duplicates if we're in composition mode or just finished composition
+    if (e.data && e.data === lastProcessedInput && (isCompo || justComposed)) {
       setTimeout(clearInput, 0);
       return;
     }
@@ -429,8 +430,8 @@ tryPressEnterFocus(e);
     isCompo = false;
     searchMode = false; // Disable search mode when typing
 
-    // Only process if we have data and it's not a duplicate
-    if (e.data && e.data !== lastProcessedInput) {
+    // Only process if we have data
+    if (e.data) {
       lastProcessedInput = e.data;
       validateInput(e.data);
     }
