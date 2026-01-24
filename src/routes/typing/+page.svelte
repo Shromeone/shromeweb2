@@ -82,7 +82,15 @@
   let spinDirection = $state('clockwise');
 
   let focused = $state(false);
-  let searchMode = $state(false);
+
+  // Animation state variables
+  let showSpeed = $state(false);
+  let showAccuracy = $state(false);
+  let showGradeLabel = $state(false);
+  let showGradeInfo = $state(false);
+  let animatedWPM = $state(0);
+  let animatedAccuracy = $state(0);
+  let animationTimeouts = $state([]);
 
   let isCompo = $state(false);
   let justComposed = $state(false);
@@ -145,7 +153,8 @@
 tryPressEnterFocus(e);
       if (document.activeElement === inputBox) return;
       if (document.activeElement === typePrep) return;
-      if (settingsOpen || gameState === GameState.START) return;
+      if (settingsOpen) return;
+      if (gameState === GameState.FINISH) return;
       // Don't focus input if clicking on a link or character
       if (e.target.closest('a') || e.target.closest('.char')) return;
       e.preventDefault();
@@ -161,16 +170,39 @@ tryPressEnterFocus(e);
       console.log("focused");
       inputBox.focus();
     };
+    
+    // Add keyboard accessibility for Enter key
+    document.addEventListener('keydown', handleEnterKey);
+    
+    // Close settings panel when clicking outside
+    document.addEventListener('click', handleOutsideClick);
   });
 
   onDestroy(() => {
     document.onkeydown = null;
+    // Remove the Enter key event listener
+    document.removeEventListener('keydown', handleEnterKey);
   });
+
+  function handleEnterKey(e) {
+    if (e.key === 'Enter') {
+      if (gameState === GameState.FINISH && !resultsScreen.classList.contains('hidden')) {
+        // If results panel is visible, close it
+        setResultsPanelVisibility(false);
+      } else if (gameState === GameState.FINISH && resultsScreen.classList.contains('hidden')) {
+        // If test is finished but results panel is not visible, restart test
+        restart();
+      }
+      // Don't restart during active gameplay (GameState.PLAY)
+    }
+  }
 
   function tryFocus() {
     if (document.activeElement === inputBox) return;
     if (document.activeElement.localName === "button") return;
-      if (settingsOpen) return;
+    if (settingsOpen) return;
+    console.log(gameState);
+    if (gameState === GameState.FINISH) return; // Don't focus if not in active gameplay
     inputBox.focus();
   }
 
@@ -228,12 +260,6 @@ tryPressEnterFocus(e);
     typeCancelled = true;
   }
 
-  function onMouseEnterChar(e) {
-    if (!searchMode) return;
-    cancelInput();
-    adjustHintsPosition(e.currentTarget);
-  }
-
   function toHalfWidth(x) {
     if (x === "。") return ".";
     return x.replace(/[\uff01-\uff5e]/g, function (ch) {
@@ -250,7 +276,6 @@ tryPressEnterFocus(e);
     updateInfoInterval = setInterval(updateInfo, 2000);
     updateTimerInterval = setInterval(updateTimer, 100);
     focusInputInterval = setInterval(tryFocus, 1000);
-    searchMode = false; // Disable search mode when typing starts
     if (autoHintMode === 'always') {
       enterShownState();
     } else if (autoHintMode === 'timed') {
@@ -308,6 +333,94 @@ tryPressEnterFocus(e);
     updateInfo();
     calcFinalPoints();
     setResultsPanelVisibility(true);
+    startResultsAnimation();
+  }
+
+  function startResultsAnimation() {
+    // Clear any existing timeouts
+    animationTimeouts.forEach(timeout => clearTimeout(timeout));
+    animationTimeouts = [];
+
+    // Reset animation states
+    showSpeed = false;
+    showAccuracy = false;
+    showGradeLabel = false;
+    showGradeInfo = false;
+    animatedWPM = 0;
+    animatedAccuracy = 0;
+
+    let delay = 0;
+
+    // 1. Fade in "speed" label along with WPM (0.3s)
+    const speedFadeIn = setTimeout(() => {
+      showSpeed = true;
+      // Start WPM counting animation
+      startWPMCounting();
+    }, delay);
+    animationTimeouts.push(speedFadeIn);
+    delay += 300;
+
+    // 2. Fade in accuracy (0.3s) while WPM continues counting
+    const accuracyFadeIn = setTimeout(() => {
+      showAccuracy = true;
+      // Start accuracy counting animation
+      startAccuracyCounting();
+    }, delay);
+    animationTimeouts.push(accuracyFadeIn);
+    delay += 300;
+
+    // 3. Fade in "grade" label only (0.3s)
+    const gradeLabelFadeIn = setTimeout(() => {
+      showGradeLabel = true;
+    }, delay);
+    animationTimeouts.push(gradeLabelFadeIn);
+    delay += 300;
+
+    // 4. Stamping animation for grade info (1s)
+    const gradeStamping = setTimeout(() => {
+      showGradeInfo = true;
+    }, delay);
+    animationTimeouts.push(gradeStamping);
+  }
+
+  function startWPMCounting() {
+    const targetWPM = WPM;
+    const duration = 1000; // 1 second
+    const startTime = Date.now();
+
+    const countInterval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Ease out cubic for smooth counting
+      const easeOutCubic = 1 - Math.pow(1 - progress, 3);
+      animatedWPM = Math.floor(targetWPM * easeOutCubic);
+
+      if (progress >= 1) {
+        animatedWPM = targetWPM;
+        clearInterval(countInterval);
+      }
+    }, 16); // ~60fps
+  }
+
+  function startAccuracyCounting() {
+    const targetAccuracy = accuracy * 100;
+    const duration = 1000; // 1 second
+    const startTime = Date.now();
+
+    const countInterval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Ease out cubic for smooth counting
+      const easeOutCubic = 1 - Math.pow(1 - progress, 3);
+      animatedAccuracy = targetAccuracy * easeOutCubic;
+
+      if (progress >= 1) {
+        animatedAccuracy = targetAccuracy;
+        clearInterval(countInterval);
+      }
+    }, 16); // ~60fps
   }
 
   function updateInfo() {
@@ -351,10 +464,6 @@ tryPressEnterFocus(e);
         enterHiddenState();
       }
     }
-  }
-
-  if (e.key !== "Enter" && e.key !== "Escape" && !e.ctrlKey && !e.metaKey) {
-    searchMode = false;
   }
 
   if (e.key === "Backspace") {
@@ -428,7 +537,6 @@ tryPressEnterFocus(e);
     }
 
     isCompo = false;
-    searchMode = false; // Disable search mode when typing
 
     // Only process if we have data
     if (e.data) {
@@ -608,6 +716,15 @@ tryPressEnterFocus(e);
     console.log(`points: ${points}`);
   }
 
+  function getGrade() {
+    if (WPM < 10) return "新手";
+    if (WPM < 25) return "初哥";
+    if (WPM < 50) return "好";
+    if (WPM < 75) return "高手";
+    if (WPM < 100) return "快手";
+    return "達人";
+  }
+
   function getTimePoint() {
     if (timeLimit <= 0) return 0;
     timeLeft = (timeLimit * 1000 - timeTakenInMs) / 1000;
@@ -679,7 +796,6 @@ tryPressEnterFocus(e);
     return;
   }
 
-  searchMode = false;
   justComposed = true;
   lastProcessedInput = dataToProcess;
 
@@ -755,6 +871,22 @@ tryPressEnterFocus(e);
     settingsOpen = !settingsOpen;
     setTimeout(() => isSpinning = false, 300);
   }
+
+  function handleOutsideClick(e) {
+    // Close settings panel when clicking outside of it
+    if (settingsOpen) {
+      const settingsPanel = document.querySelector('.settings-panel');
+      const settingsBtn = document.querySelector('.settings-btn');
+      const overlay = document.querySelector('.overlay');
+      
+      // Check if the click target is not within the settings panel, settings button, or overlay
+      if (!settingsPanel.contains(e.target) && 
+          !settingsBtn.contains(e.target) && 
+          !overlay.contains(e.target)) {
+        handleSettingsToggle();
+      }
+    }
+  }
   let correctWords = $derived(correctIndexes.length);
   let wrongWords = $derived(wrongIndexes.length);
   let currentWord = $derived(content[currentWordIndex]);
@@ -823,9 +955,8 @@ tryPressEnterFocus(e);
   <div class="test-content {gameState === GameState.PLAY ? 'with-fixed-info' : ''}" style="--char-font: {fontSelect}">
     {#each content as char, index (index)}
       <div
-        class="char {searchMode ? 'search-mode-active' : ''}"
+        class="char"
         id="char-{index}"
-        onmouseenter={onMouseEnterChar}
         onclick={() => {
           if (hintCharIndex !== index) {
             // Different character clicked - move hints to that character, set to shown
@@ -842,7 +973,7 @@ tryPressEnterFocus(e);
           }
         }}
       >
-        {#if searchMode || (hintCharIndex === index && hintState === HintState.URL)}
+        {#if hintCharIndex === index && hintState === HintState.URL}
           <a
             href={"https://www.hkcards.com/cj/cj-char-" + char + ".html"}
             target="_blank"
@@ -897,16 +1028,6 @@ tryPressEnterFocus(e);
   {/if}
 
   <div class="bottom-left-buttons">
-    <button 
-      class="search-mode-btn {searchMode ? 'active' : ''}" 
-      onclick={() => searchMode = !searchMode}
-      title={searchMode ? "關閉搜尋模式" : "開啟搜尋模式"}
-    >
-      {searchMode ? "搜尋模式: 開啟" : "搜尋模式: 關閉"}
-    </button>
-    
-
-    
     {#if gameState === GameState.PLAY}
       <button class="bottom-btn" onmouseenter={cancelInput} onclick={finishGame}
         >結束遊戲</button
@@ -927,7 +1048,7 @@ tryPressEnterFocus(e);
   </div>
 
   {#if settingsOpen}
-  <div class="overlay" onclick={handleSettingsToggle}></div>
+  <div class="overlay"></div>
   {/if}
 
   <div class="settings-panel" class:open={settingsOpen}>
@@ -991,37 +1112,18 @@ tryPressEnterFocus(e);
     <div class="results-panel">
       <div class="results-info">
         <h2>成績</h2>
-        <p>準確度：{(accuracy * 100).toFixed(1) + "%"}</p>
-        <p>速度：{WPM.toFixed(1)}WPM</p>
-        <p>正確：{correctIndexes.length}字</p>
-        <p>錯誤：{wrongIndexes.length}字</p>
-        <p>底分：{basePoints}</p>
-
-        <p>總分：{points}</p>
-        <p>
-          正確加分：{correctIndexes.length * charPoints.correct} ({correctIndexes.length}字*{charPoints.correct}分/字)
-        </p>
-        <p>
-          錯誤扣分：{wrongIndexes.length * charPoints.wrong} ({wrongIndexes.length}字*{charPoints.wrong}分/字)
-        </p>
-        <p>
-          準確度加分：{accuracyPoint}
-          {#if accuracyPoint > 0}
-            ({basePoints} * {Math.round(accuracyMultiplier * 100) + "%"}) ({accuracyCutoff}%或以上)
-          {/if}
-        </p>
-        <p>
-          速度加分：{speedPoint}
-          {#if speedPoint > 0}
-            ({basePoints} * {Math.round(speedMultiplier * 100) + "%"}) ({speedCutoff}WPM或以上)
-          {/if}
-        </p>
-        <p>
-          時間加分：{timePoint}
-          {#if timePoint > 0}
-            ({timeLeft}秒 * {bonus.timeLeft})
-          {/if}
-        </p>
+        <div class="result-item">
+          <h3 class="result-label" class:fade-in={showSpeed}>速度</h3>
+          <span class="result-value" class:fade-in={showSpeed}>{animatedWPM.toFixed(1)}WPM</span>
+        </div>
+        <div class="result-item">
+          <h3 class="result-label" class:fade-in={showAccuracy}>準確度</h3>
+          <span class="result-value" class:fade-in={showAccuracy}>{animatedAccuracy.toFixed(1)}%</span>
+        </div>
+        <div class="result-item">
+          <h3 class="result-label" class:fade-in={showGradeLabel}>等級</h3>
+          <span class="result-value grade-value" class:stamping={showGradeInfo}>{getGrade()}</span>
+        </div>
       </div>
       <div class="panel-buttons">
         <button onclick={() => setResultsPanelVisibility(false)}>關閉</button>
@@ -1144,6 +1246,61 @@ tryPressEnterFocus(e);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    gap: 2rem;
+  }
+
+  .results-info h3 {
+    font-size: 2vh;
+    color: white;
+    margin: 0;
+    font-weight: normal;
+  }
+
+  .results-info span {
+    font-size: 5vh;
+    color: white;
+    font-weight: bold;
+    letter-spacing: 0.1rem;
+  }
+
+  .result-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .result-label {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  .result-label.fade-in {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .result-value {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  .result-value.fade-in {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .grade-value {
+    font-size: 5vh !important;
+    opacity: 0;
+    transform: scale(2) translateY(-50%);
+    /* transition: all 1s cubic-bezier(0.175, 0.885, 0.32, 1.275); */
+  }
+
+  .grade-value.stamping {
+    opacity: 1;
+    transform: scale(1) translateY(0);
   }
 
   .panel-buttons {
@@ -1315,10 +1472,6 @@ tryPressEnterFocus(e);
     opacity: 0%;
   }
 
-  .char.search-mode-active:hover .hints-container {
-    opacity: 100%;
-  }
-
   .bottom-left-buttons {
     position: fixed;
     bottom: 20px;
@@ -1328,31 +1481,6 @@ tryPressEnterFocus(e);
     align-items: center;
     z-index: 1000;
     flex-wrap: wrap;
-  }
-
-  .search-mode-btn {
-    padding: 0.8em 1.5em;
-    font-size: 1rem;
-    border-radius: 1rem;
-    border: 2px solid rgba(255, 255, 255, 0.5);
-    background-color: rgba(91, 97, 148, 0.8);
-    color: white;
-    cursor: pointer;
-    transition: all 0.3s;
-  }
-
-  .search-mode-btn:hover {
-    background-color: rgba(91, 97, 148, 1);
-    border-color: rgba(255, 255, 255, 0.8);
-  }
-
-  .search-mode-btn.active {
-    background-color: rgba(101, 196, 101, 0.8);
-    border-color: rgb(101, 196, 101);
-  }
-
-  .search-mode-btn.active:hover {
-    background-color: rgba(101, 196, 101, 1);
   }
 
   .bottom-btn {
@@ -1381,11 +1509,6 @@ tryPressEnterFocus(e);
       gap: 5px;
     }
 
-    .search-mode-btn {
-      padding: 0.6em 1.2em;
-      font-size: 0.9rem;
-    }
-
     .bottom-btn {
       padding: 0.6em 1.2em;
       font-size: 0.9rem;
@@ -1400,11 +1523,6 @@ tryPressEnterFocus(e);
       gap: 5px;
     }
 
-    .search-mode-btn {
-      padding: 0.6em 1.2em;
-      font-size: 0.9rem;
-    }
-
     .bottom-btn {
       padding: 0.6em 1.2em;
       font-size: 0.9rem;
@@ -1417,11 +1535,6 @@ tryPressEnterFocus(e);
       bottom: 5px;
       left: 5px;
       gap: 3px;
-    }
-
-    .search-mode-btn {
-      padding: 0.5em 1em;
-      font-size: 0.8rem;
     }
 
     .bottom-btn {
