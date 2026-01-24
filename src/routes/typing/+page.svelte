@@ -133,6 +133,7 @@
 
 
   let isTimeUp = false;
+  let caretElement = $state();
 
   const autoScrollPercentage = 0.3;
   const autoScrollOffset = 0.1;
@@ -447,10 +448,43 @@ tryPressEnterFocus(e);
     inputBox.style.top = rect.top + scrollY + inputBoxOffset.y + "px";
     inputBox.style.left = rect.left + inputBoxOffset.x + "px";
     currentChar.appendChild(inputDisplay);
+    // Update caret position
+    updateCaretPosition();
     // Update scroll position after updating input box position
     if (gameState === GameState.PLAY) {
       updateScroll();
     }
+  }
+
+  function updateCaretPosition() {
+    const currentChar = document.querySelector(`#char-${currentWordIndex}`);
+    if (!currentChar || !caretElement) return;
+    
+    const rect = currentChar.getBoundingClientRect();
+    const targetTop = rect.top + scrollY + rect.width / 2;
+    const targetLeft = rect.left;
+    
+    // Smooth animation using CSS transitions
+    caretElement.style.transition = 'top 0.2s ease-out, left 0.2s ease-out';
+    caretElement.style.top = targetTop + "px";
+    caretElement.style.left = targetLeft + "px";
+    caretElement.style.opacity = focused ? "1" : "0.5";
+    
+    // Reset the blinking animation when caret moves
+    resetCaretBlink();
+  }
+
+  function resetCaretBlink() {
+    if (!caretElement) return;
+    
+    // Remove the animation temporarily to reset it
+    // caretElement.style.animation = 'none';
+    
+    // Force reflow to ensure the animation property is removed
+    void caretElement.offsetWidth;
+    
+    // Re-add the animation to restart it
+    // caretElement.style.animation = 'blink 2s infinite';
   }
 
   function keyDown(e) {
@@ -839,21 +873,7 @@ tryPressEnterFocus(e);
     }
   }
 
-  function setSettingsVisibility(show = false) {
-    settingsOpen = show;
-  }
 
-  function initCangjieMap() {
-    const lines = cangjieData.split('\n');
-    for (const line of lines) {
-      const parts = line.split(/\s+/);
-      if (parts.length >= 3) {
-        parts.pop();
-        for (let i = 1; i < parts.length; i++)
-        cangjieMap[parts[i]] = parts[0];
-      }
-    }
-  }
 
   function getChineseCangjieCode(code) {
     if (!code) return '';
@@ -1035,6 +1055,8 @@ tryPressEnterFocus(e);
         {/if}
       </div>
     {/each}
+    <!-- Caret element -->
+    <div id="caret" class="caret" bind:this={caretElement}></div>
   </div>
 
   <div class="hints-container" class:visible={hintState !== HintState.HIDDEN} bind:this={hintsContainer}>
@@ -1420,7 +1442,7 @@ tryPressEnterFocus(e);
 
   #type-input {
     position: absolute;
-    color: white;
+    color: transparent;
     left: 0;
     font-size: 3rem;
     height: 5rem;
@@ -1428,7 +1450,11 @@ tryPressEnterFocus(e);
     border: none;
     overflow: hidden;
     width: 0.1px;
-  }
+
+    border-radius: 0rem;
+    padding: 0.5rem;
+    box-shadow: none;
+}
 
   #type-input:focus {
     border: none;
@@ -1465,22 +1491,6 @@ tryPressEnterFocus(e);
     /* border: 1px solid skyblue; */
   }
 
-  .current-char::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 40%;
-    height: 2px;
-    background-color: skyblue;
-    animation: blink 2s infinite;
-  }
-
-  @keyframes blink {
-    0%, 50% { opacity: 1; }
-    51%, 100% { opacity: 0; }
-  }
 
   .inactive p {
     border-color: grey;
@@ -1659,5 +1669,26 @@ tryPressEnterFocus(e);
   .settings-icon.spinning.anticlockwise {
     animation: spin-anticlockwise 0.3s ease;
     transform-origin: center;
+  }
+
+  /* Caret styling */
+  .caret {
+    position: absolute;
+    width: 2px;
+    height: 1.2em;
+    background-color: skyblue;
+    z-index: 1000;
+    pointer-events: none;
+    transition: top 0.2s ease-out, left 0.2s ease-out, opacity 0.3s ease;
+  }
+
+  /* Blinking animation for caret */
+  @keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+  }
+
+  .caret {
+    animation: blink 2s infinite;
   }
 </style>
