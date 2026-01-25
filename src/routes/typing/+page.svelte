@@ -181,6 +181,13 @@ tryPressEnterFocus(e);
     
     // Close results panel when clicking outside
     document.addEventListener('click', handleResultsOutsideClick);
+    
+    // Handle viewport changes (especially important for mobile)
+    window.addEventListener('resize', handleViewportChange);
+    window.addEventListener('orientationchange', handleViewportChange);
+    
+    // Handle virtual keyboard appearance
+    setupVirtualKeyboardHandling();
   });
 
   onDestroy(() => {
@@ -758,17 +765,35 @@ const charCenter = charRect.left + charRect.width / 2;
     // Use requestAnimationFrame to ensure DOM is updated
     requestAnimationFrame(() => {
       const charRect = currentChar.getBoundingClientRect();
-      const charTop = charRect.top + scrollY;
-      const targetPosition = window.innerHeight * 0.3; // 30% from top
-      const currentPosition = charRect.top; // Current position relative to viewport
+      const viewportHeight = window.innerHeight;
+      const targetPosition = viewportHeight * 0.3; // 30% from top
+      const currentCharTop = charRect.top;
       
       // Calculate the scroll position needed to place the character at 30% from top
-      const scrollTarget = charTop - targetPosition;
+      // Formula: scrollTarget = currentCharTop + currentScrollY - targetPosition
+      const currentScrollY = window.scrollY;
+      const scrollTarget = currentCharTop + currentScrollY - targetPosition;
       
-      // Only scroll if the character is not already at the target position (with a small threshold)
-      if (Math.abs(currentPosition - targetPosition) > 10) {
-        scroll({ top: scrollTarget, behavior: "smooth" });
+      // Add a threshold to prevent excessive scrolling when already close
+      // Use a slightly larger threshold for mobile devices
+      const isMobile = window.innerWidth <= 768;
+      const threshold = isMobile ? 15 : 5; // pixels (increased for mobile)
+      
+      // Only scroll if the character is not already at the target position
+      if (Math.abs(currentCharTop - targetPosition) > threshold) {
+        // Use smooth scrolling for better UX, but check if it's supported
+        if ('scrollBehavior' in document.documentElement.style) {
+          window.scrollTo({
+            top: scrollTarget,
+            behavior: 'smooth'
+          });
+        } else {
+          // Fallback for older browsers
+          window.scrollTo(0, scrollTarget);
+        }
       }
+      
+      // Update caret position after scroll
       updateCaretPosition();
     });
   }
@@ -1151,6 +1176,15 @@ const charCenter = charRect.left + charRect.width / 2;
     updateTimer(0);
   }
 
+  function handleViewportChange() {
+    // Handle viewport changes (especially important for mobile)
+    // This function will be called on resize and orientation change
+    if (gameState === GameState.PLAY) {
+      // Re-calculate and update scroll position when viewport changes
+      updateScroll();
+    }
+  }
+
   function setResultsPanelVisibility(show = false) {
     if (show) {
       resultsScreen.classList.remove("hidden");
@@ -1228,6 +1262,58 @@ const charCenter = charRect.left + charRect.width / 2;
   function isMissingCharacter(index) {
     // A character is "missing" if it's in the missingIndexes array
     return missingIndexes.includes(index);
+  }
+
+  function setupVirtualKeyboardHandling() {
+    let initialViewportHeight = window.innerHeight;
+    let keyboardVisible = false;
+    let lastScrollTop = 0;
+    
+    function handleVirtualKeyboard() {
+      const currentViewportHeight = window.innerHeight;
+      const heightDiff = initialViewportHeight - currentViewportHeight;
+      
+      // If viewport height decreased significantly, virtual keyboard is likely visible
+      if (heightDiff > 150) { // Threshold for keyboard detection
+        keyboardVisible = true;
+        // Store current scroll position
+        lastScrollTop = window.scrollY;
+        
+        // Force a scroll update to ensure proper positioning
+        if (gameState === GameState.PLAY) {
+          setTimeout(() => updateScroll(), 100);
+        }
+      } else if (keyboardVisible && heightDiff < 50) {
+        // Virtual keyboard was dismissed
+        keyboardVisible = false;
+        // Restore scroll position if needed
+        if (gameState === GameState.PLAY) {
+          setTimeout(() => updateScroll(), 100);
+        }
+      }
+      
+      // Update initial height for next check
+      initialViewportHeight = currentViewportHeight;
+    }
+    
+    // Listen for resize events (which happen when virtual keyboard appears/disappears)
+    window.addEventListener('resize', handleVirtualKeyboard);
+    
+    // Also listen for focus/blur events on input to detect keyboard
+    inputBox.addEventListener('focus', () => {
+      setTimeout(handleVirtualKeyboard, 100);
+    });
+    
+    inputBox.addEventListener('blur', () => {
+      setTimeout(handleVirtualKeyboard, 100);
+    });
+    
+    // Cleanup function
+    return () => {
+      window.removeEventListener('resize', handleVirtualKeyboard);
+      inputBox.removeEventListener('focus', handleVirtualKeyboard);
+      inputBox.removeEventListener('blur', handleVirtualKeyboard);
+    };
   }
 </script>
 
