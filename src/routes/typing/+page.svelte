@@ -444,7 +444,6 @@ const charCenter = charRect.left + charRect.width / 2;
   }
 
   function updateInputBoxPos() {
-    
     const currentChar = document.querySelector(`#char-${currentWordIndex}`);
     updateCangjieCode();
     if (!currentChar) return;
@@ -455,9 +454,7 @@ const charCenter = charRect.left + charRect.width / 2;
     // Update caret position
     updateCaretPosition();
     // Update scroll position after updating input box position
-    if (gameState === GameState.PLAY) {
       updateScroll();
-    }
   }
 
   function updateCaretPosition() {
@@ -1179,10 +1176,8 @@ const charCenter = charRect.left + charRect.width / 2;
   function handleViewportChange() {
     // Handle viewport changes (especially important for mobile)
     // This function will be called on resize and orientation change
-    if (gameState === GameState.PLAY) {
       // Re-calculate and update scroll position when viewport changes
       updateScroll();
-    }
   }
 
   function setResultsPanelVisibility(show = false) {
@@ -1268,6 +1263,7 @@ const charCenter = charRect.left + charRect.width / 2;
     let initialViewportHeight = window.innerHeight;
     let keyboardVisible = false;
     let lastScrollTop = 0;
+    let scrollLockTimer = null;
     
     function handleVirtualKeyboard() {
       const currentViewportHeight = window.innerHeight;
@@ -1279,6 +1275,9 @@ const charCenter = charRect.left + charRect.width / 2;
         // Store current scroll position
         lastScrollTop = window.scrollY;
         
+        // Lock scroll position to prevent user scrolling when keyboard is visible
+        lockScrollPosition();
+        
         // Force a scroll update to ensure proper positioning
         if (gameState === GameState.PLAY) {
           setTimeout(() => updateScroll(), 100);
@@ -1286,6 +1285,10 @@ const charCenter = charRect.left + charRect.width / 2;
       } else if (keyboardVisible && heightDiff < 50) {
         // Virtual keyboard was dismissed
         keyboardVisible = false;
+        
+        // Remove scroll lock
+        unlockScrollPosition();
+        
         // Restore scroll position if needed
         if (gameState === GameState.PLAY) {
           setTimeout(() => updateScroll(), 100);
@@ -1294,6 +1297,43 @@ const charCenter = charRect.left + charRect.width / 2;
       
       // Update initial height for next check
       initialViewportHeight = currentViewportHeight;
+    }
+    
+    function lockScrollPosition() {
+      // Store current scroll position
+      lastScrollTop = window.scrollY;
+      
+      // Prevent scrolling by setting body to fixed position
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${lastScrollTop}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      
+      // Also prevent scrolling on the main container
+      const background = document.querySelector('.background');
+      if (background) {
+        background.style.overflow = 'hidden';
+      }
+    }
+    
+    function unlockScrollPosition() {
+      // Remove scroll lock
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
+      
+      // Restore scroll position
+      if (lastScrollTop > 0) {
+        window.scrollTo(0, lastScrollTop);
+        lastScrollTop = 0;
+      }
+      
+      // Restore overflow on main container
+      const background = document.querySelector('.background');
+      if (background) {
+        background.style.overflow = '';
+      }
     }
     
     // Listen for resize events (which happen when virtual keyboard appears/disappears)
@@ -1305,14 +1345,29 @@ const charCenter = charRect.left + charRect.width / 2;
     });
     
     inputBox.addEventListener('blur', () => {
-      setTimeout(handleVirtualKeyboard, 100);
+      // Add a small delay to allow for keyboard dismissal detection
+      setTimeout(handleVirtualKeyboard, 300);
+    });
+    
+    // Handle scroll events to maintain position when keyboard is visible
+    window.addEventListener('scroll', () => {
+      if (keyboardVisible) {
+        // If user tries to scroll, reset to original position
+        if (window.scrollY !== lastScrollTop) {
+          window.scrollTo(0, lastScrollTop);
+        }
+      }
     });
     
     // Cleanup function
     return () => {
       window.removeEventListener('resize', handleVirtualKeyboard);
+      window.removeEventListener('scroll', () => {});
       inputBox.removeEventListener('focus', handleVirtualKeyboard);
       inputBox.removeEventListener('blur', handleVirtualKeyboard);
+      
+      // Ensure scroll is unlocked on cleanup
+      unlockScrollPosition();
     };
   }
 </script>
@@ -1365,7 +1420,7 @@ const charCenter = charRect.left + charRect.width / 2;
     oninput={handlers(startTimer, halfInput)}
     onkeydown={keyDown}
     onfocus={() => {focused = true; updateCaretPosition();}}
-    onfocusout={() => {focused = false;updateCaretPosition();}}
+    onfocusout={() => {focused = false;}}
     bind:value={input}
     bind:this={inputBox}
   />
