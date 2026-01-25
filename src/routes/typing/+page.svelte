@@ -1149,6 +1149,7 @@ const charCenter = charRect.left + charRect.width / 2;
     wrongIndexes = [];
     correctIndexes = [];
     missingIndexes = [];
+    extraCharacters = [];
     currentWordIndex = 0;
     updateInputBoxPos();
     updateScroll();
