@@ -468,7 +468,7 @@ tryPressEnterFocus(e);
     if (!currentChar || !caretElement) return;
     
     const rect = currentChar.getBoundingClientRect();
-    const targetTop = rect.top + scrollY + rect.height * 0.3;
+    const targetTop = rect.top + scrollY + rect.height * 0.25;
     let targetLeft = rect.left;
     
     // Check if there's an extra character associated with current position
@@ -492,6 +492,7 @@ tryPressEnterFocus(e);
     
     // Reset the blinking animation when caret moves
     resetCaretBlink();
+    tryFocus();
   }
 
   function resetCaretBlink() {
@@ -1775,36 +1776,34 @@ tryPressEnterFocus(e);
   }
 
   .test-content {
+    display: flex;
+    flex-wrap: wrap;
     padding: 3% 2%;
   }
 
-  .test-content.with-fixed-info {
+  /* .test-content.with-fixed-info {
     padding-top: calc(3% + 60px);
-  }
+  } */
 
   .test-content p {
     color: lightgrey;
     display: inline-block;
     font-family: var(--char-font);
     /* font-family: ""; */
-    font-size: max(18px, 3.5vh);
+    font-size: max(20px, 4vh);
     margin: max(4px, 0.3vw);
     width: max(20px, 4vh);
-    height: max(20px, 4vh);
+    /* height: max(20px, 4vh); */
     /* border: 1px solid rgba(255, 255, 255, 0.416); */
+    /* padding: max(4px, 0.5vw); */
     text-align: center;
-    vertical-align: middle;
   }
   
-  /* Set CSS variable for caret height */
+  /* Set CSS variable for caret height
   .test-content {
     --char-font-size: max(18px, 3.5vh);
-  }
+  } */
 
-  .char {
-    display: inline-block;
-    position: relative;
-  }
 
   .reminder-text {
     color: lightgrey;
@@ -1818,7 +1817,7 @@ tryPressEnterFocus(e);
   .extra-char {
     display: inline-block;
     position: relative;
-    margin-right: 0.1em; /* Small spacing between extra char and main char */
+    ; /* Small spacing between extra char and main char */
   }
 
   .extra-char-text {
@@ -2078,7 +2077,7 @@ tryPressEnterFocus(e);
     width: 2px;
     height: var(--char-font-size, max(18px, 3.5vh));
     background-color: skyblue;
-    z-index: 1000;
+    z-index: 1;
     pointer-events: none;
     transition: top 0.2s ease-out, left 0.2s ease-out, opacity 0.3s ease;
   }
