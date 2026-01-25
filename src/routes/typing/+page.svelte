@@ -112,7 +112,6 @@
   });
 
   let hintState = $state(HintState.HIDDEN);
-  let hintCharIndex = $state(0);
   let autoHintTimeout = null;
   let revealTimeout = null;
   let autoHintMode = $state('timed');
@@ -223,41 +222,32 @@ tryPressEnterFocus(e);
     input = "";
     // Don't reset lastProcessedInput here - it should persist across input clears
   }
-  function adjustHintsPosition(charElement) {
-    const hintsContainer = charElement.querySelector(".hints-container");
+  function adjustHintsPosition() {
     if (!hintsContainer) return;
-
+    const charElement = document.querySelector(`#char-${currentWordIndex}`);
     const charRect = charElement.getBoundingClientRect();
-    const hintsWidth = 336; // 21rem * 16px (assuming 1rem = 16px)
     const viewportWidth = window.innerWidth;
-    const charCenter = charRect.left + charRect.width / 2;
-
+    const hintsWidth = 336; // 21rem * 16px (assuming 1rem = 16px)
+const charCenter = charRect.left + charRect.width / 2;
     // Reset position
     hintsContainer.style.right = "";
     hintsContainer.style.left = "";
+    hintsContainer.style.top = "";
+    hintsContainer.style.bottom = "";
     hintsContainer.style.transform = "";
 
-    // Calculate space available on left and right
+    // Position hints container at the top-left of the character
+    hintsContainer.style.left = "0";
+    hintsContainer.style.top = "";
+    hintsContainer.style.bottom = "5.5rem";
+    
+    // Check if there's enough space on the right
     const spaceOnRight = viewportWidth - charRect.right;
-    const spaceOnLeft = charRect.left;
-
-    // If there's enough space on the right, position to the right
-    if (spaceOnRight >= hintsWidth) {
-      hintsContainer.style.left = "0";
-    }
-    // If there's enough space on the left, position to the left
-    else if (spaceOnLeft >= hintsWidth) {
+    
+    if (spaceOnRight < hintsWidth) {
+      // Not enough space on the right, position to the left
+      hintsContainer.style.left = "";
       hintsContainer.style.right = "0";
-    }
-    // If neither side has enough space, center the hints container on the character
-    else {
-      const hintsCenterOffset = hintsWidth / 2;
-      const idealLeft = charCenter - hintsCenterOffset;
-
-      // Clamp the position to keep hints container within viewport
-      const clampedLeft = Math.max(10, Math.min(idealLeft, viewportWidth - hintsWidth - 10));
-
-      hintsContainer.style.left = `${clampedLeft - charRect.left}px`;
     }
   }
   function cancelInput() {
@@ -514,7 +504,7 @@ tryPressEnterFocus(e);
   typeCancelled = false;
 
   if (gameState === GameState.PLAY) {
-    if (hintCharIndex !== currentWordIndex) {
+    if (currentWordIndex !== currentWordIndex) {
       updateCangjieCode();
       if (autoHintMode === 'always') {
         enterShownState();
@@ -671,8 +661,7 @@ tryPressEnterFocus(e);
       updateInputBoxPos();
       
       // Update hint logic if needed
-      if (hintCharIndex !== currentWordIndex) {
-        hintCharIndex = currentWordIndex;
+      if (currentWordIndex !== currentWordIndex) {
         updateCangjieCodeForChar(content[currentWordIndex]);
         enterShownState();
       }
@@ -785,27 +774,27 @@ tryPressEnterFocus(e);
   }
 
   function updateCangjieCode() {
-    console.log("update cangjie")
-    hintCharIndex = currentWordIndex;
-    moveHintsToChar(hintCharIndex);
+    moveHintsToChar();
     cangjieCode = currentWord ? cangjieMap[currentWord] || '' : '';
     revealedChars = 0;
   }
 
   function updateCangjieCodeForChar(char) {
-    moveHintsToChar(hintCharIndex);
+    moveHintsToChar();
     cangjieCode = cangjieMap[char] || '';
     revealedChars = 0;
   }
 
-  function moveHintsToChar(index) {
+  function moveHintsToChar() {
     if (!hintsContainer) return;
-    const charElement = document.querySelector(`#char-${index}`);
-    if (charElement) {
-      charElement.appendChild(hintsContainer);
-      // Adjust hints position after moving to ensure proper placement
-      adjustHintsPosition(charElement);
-    }
+    const charElement = document.querySelector(`#char-${currentWordIndex}`);
+    if (!charElement) return;
+    console.log("movehintstochar");
+    // Move hints container to the current character
+    charElement.appendChild(hintsContainer);
+    
+    // Position hints container at the top-left of the character
+    adjustHintsPosition();
   }
 
   function onStateChange() {
@@ -813,12 +802,15 @@ tryPressEnterFocus(e);
     clearTimeout(revealTimeout);
     autoHintTimeout = null;
     revealTimeout = null;
+    console.log("State change");
+    moveHintsToChar();
   }
 
   function enterHiddenState() {
     onStateChange();
     hintState = HintState.HIDDEN;
     revealedChars = 0;
+    console.log("set state to hidden");
   }
 
   function enterShownState() {
@@ -843,6 +835,7 @@ tryPressEnterFocus(e);
 
   function enterUrlState() {
     onStateChange();
+    console.log("enter url state");
     hintState = HintState.URL;
     revealedChars = cangjieChars.length;
   }
@@ -942,6 +935,8 @@ tryPressEnterFocus(e);
       if (autoHintMode !== 'always') {
         enterHiddenState();
         startAutoHintTimer();
+      } else {
+        enterShownState();
       }
       // For 'always' mode, keep hints shown for next character
     } else {
@@ -1324,6 +1319,7 @@ tryPressEnterFocus(e);
         class="char"
         id="char-{index}"
         onclick={(e) => {
+          const oriWordIndex = currentWordIndex;
           // Get the click position relative to the character element
           const rect = e.currentTarget.getBoundingClientRect();
           const clickX = e.clientX;
@@ -1369,36 +1365,36 @@ tryPressEnterFocus(e);
             // When moving to a missing character, we're to the left of it
             onLeftOfExtraChar = true;
           }
-          const hintDiff = hintCharIndex !== currentWordIndex;
+          const hintDiff = oriWordIndex !== currentWordIndex;
           // Update input box position and caret
           updateInputBoxPos();
-          
+          console
           // Update hint logic
           if (hintDiff) {
-            hintCharIndex = currentWordIndex;
             updateCangjieCodeForChar(content[currentWordIndex]);
-            enterHiddenState();
+            if (autoHintMode !== 'always') {
+        enterHiddenState();
+        startAutoHintTimer();
+      } else {
+        enterShownState();
+      }
           } else {
             if (hintState === HintState.SHOWN) {
+              console.log("HI");
               enterUrlState();
-            } else if (hintState === HintState.HIDDEN && currentWordIndex === currentWordIndex) {
+            } else if (hintState === HintState.HIDDEN) {
               enterShownState();
             }
           }
         }}
       >
-        {#if hintCharIndex === index && hintState === HintState.URL}
+        {#if currentWordIndex === index && hintState === HintState.URL}
           <a
             href={"https://www.hkcards.com/cj/cj-char-" + char + ".html"}
             target="_blank"
           >
-            {#if index === currentWordIndex}
-              <div class={focused ? "" : "inactive"}>
-                <div class="current-char">
-                  <p>{char}</p>
-                </div>
-              </div>
-            {:else if isMissingCharacter(index)}
+          
+            {#if isMissingCharacter(index)}
               <p class="missing">{char}</p>
             {:else if wrongIndexes.includes(index)}
               <p class="wrong">{char}</p>
@@ -1409,22 +1405,15 @@ tryPressEnterFocus(e);
             {/if}
           </a>
         {:else}
-          <!-- {#if index === currentWordIndex}
-            <div class={focused ? "" : "inactive"}>
-              <div class="current-char">
-                <p>{char}</p>
-              </div>
-            </div>
-          {/if} -->
           {#if isMissingCharacter(index)}
-            <p class="missing">{char}</p>
-          {:else if wrongIndexes.includes(index)}
-            <p class="wrong">{char}</p>
-          {:else if correctIndexes.includes(index)}
-            <p class="correct">{char}</p>
-          {:else}
-            <p>{char}</p>
-          {/if}
+              <p class="missing">{char}</p>
+            {:else if wrongIndexes.includes(index)}
+              <p class="wrong">{char}</p>
+            {:else if correctIndexes.includes(index)}
+              <p class="correct">{char}</p>
+            {:else}
+              <p>{char}</p>
+            {/if}
         {/if}
       </div>
     {/each}
@@ -1435,7 +1424,7 @@ tryPressEnterFocus(e);
   <div class="hints-container" class:visible={hintState !== HintState.HIDDEN} bind:this={hintsContainer}>
     <img
       class="hints-picture"
-      src={hintCharIndex >= 0 ? `https://www.hkcards.com/img/cj/${content[hintCharIndex]}.png` : ''}
+      src={currentWordIndex >= 0 ? `https://www.hkcards.com/img/cj/${content[currentWordIndex]}.png` : ''}
     />
     <p id="cangjie-code">
       {#each [...cangjieChars, ...Array(Math.max(0, 5 - cangjieChars.length)).fill('')] as char, i}
@@ -1597,6 +1586,10 @@ tryPressEnterFocus(e);
     height: 100vh;
     background: rgba(0, 0, 0, 0.5);
     z-index: 100;
+  }
+
+  .char {
+    position: relative;
   }
 
   .results-screen {
@@ -1885,10 +1878,6 @@ tryPressEnterFocus(e);
   #input-display:blank {
     display: none;
   }
-  .current-char {
-    display: inline-block;
-    position: relative;
-  }
 
   .inactive p {
     border-color: grey;
@@ -1905,10 +1894,6 @@ tryPressEnterFocus(e);
     display: inline-block;
   }
 
-
-  .char:hover .hints-container {
-    opacity: 0%;
-  }
 
   .bottom-left-buttons {
     position: fixed;
@@ -1987,9 +1972,6 @@ tryPressEnterFocus(e);
     }
   }
   .hints-container {
-    display: flex;
-    flex-direction: column;
-    bottom: 5.5rem;
     /* left: 4rem; */
     width: 21rem;
     height: 8rem;
@@ -2006,7 +1988,7 @@ tryPressEnterFocus(e);
   }
 
   .hints-container.visible {
-    opacity: 100%;
+    opacity: 1;
   }
 
   .hints-picture {
