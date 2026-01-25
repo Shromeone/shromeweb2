@@ -1052,15 +1052,13 @@ tryPressEnterFocus(e);
     if (currentWordIndex === 0) return;
     
     // Check if there's an extra character at the current position
-    const extraCharAtCurrent = extraCharacters.find(ec => ec.index === currentWordIndex);
     
     // If there's an extra character and we're to the right of it (onLeftOfExtraChar is false),
     // remove the extra character instead of moving back
-    if (extraCharAtCurrent && !onLeftOfExtraChar) {
+    if (hasExtraCharacterAssociated(currentWordIndex) && !onLeftOfExtraChar) {
       // Remove the extra character
-      extraCharacters = extraCharacters.filter(ec => !(ec.index === currentWordIndex && ec.char === extraCharAtCurrent.char));
+      extraCharacters = extraCharacters.filter(ec => ec.index !== currentWordIndex);
       // Set onLeftOfExtraChar to true since we're now to the left of where the extra character was
-      onLeftOfExtraChar = true;
       updateInputBoxPos();
       return;
     }
@@ -1082,7 +1080,7 @@ tryPressEnterFocus(e);
       // If we're moving to a position with an extra character, set onLeftOfExtraChar to true
       const extraCharAtNewPos = extraCharacters.find(ec => ec.index === currentWordIndex);
       if (extraCharAtNewPos) {
-        onLeftOfExtraChar = true;
+        onLeftOfExtraChar = false;
       }
     }
     
