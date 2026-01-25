@@ -158,7 +158,6 @@ tryPressEnterFocus(e);
       if (document.activeElement === inputBox) return;
       if (document.activeElement === typePrep) return;
       if (settingsOpen) return;
-      if (gameState === GameState.FINISH) return;
       // Don't focus input if clicking on a link or character
       if (e.target.closest('a') || e.target.closest('.char')) return;
       e.preventDefault();
@@ -214,7 +213,6 @@ tryPressEnterFocus(e);
     if (document.activeElement === typePrep) return;
     if (document.activeElement.localName === "button") return;
     if (settingsOpen) return;
-    if (gameState === GameState.FINISH) return; // Don't focus if not in active gameplay
     inputBox.focus();
   }
 
@@ -302,6 +300,7 @@ const charCenter = charRect.left + charRect.width / 2;
   }
 
   function timeUp() {
+    if (gameState == GameState.FINISH) return;
     isTimeUp = true;
     finishGame();
   }
@@ -322,15 +321,15 @@ const charCenter = charRect.left + charRect.width / 2;
   }
 
   function finishGame() {
-    clearInterval(updateTimerInterval);
-    clearInterval(updateInfoInterval);
-    clearInterval(focusInputInterval);
-    clearInterval(caretUpdateInterval);
-    clearTimeout(autoHintTimeout);
-    clearTimeout(revealTimeout);
-    autoHintTimeout = null;
-    revealTimeout = null;
-    enterHiddenState();
+    // clearInterval(updateTimerInterval);
+    // clearInterval(updateInfoInterval);
+    // clearInterval(focusInputInterval);
+    // clearInterval(caretUpdateInterval);
+    // clearTimeout(autoHintTimeout);
+    // clearTimeout(revealTimeout);
+    // autoHintTimeout = null;
+    // revealTimeout = null;
+    // enterHiddenState();
     gameState = GameState.FINISH;
     console.log(wrongWords, content.length);
     updateInfo();
@@ -507,7 +506,7 @@ const charCenter = charRect.left + charRect.width / 2;
   function keyDown(e) {
   typeCancelled = false;
 
-  if (gameState === GameState.PLAY) {
+  if (gameState !== GameState.START) {
     if (currentWordIndex !== currentWordIndex) {
       updateCangjieCode();
       if (autoHintMode === 'always') {
@@ -863,7 +862,7 @@ const charCenter = charRect.left + charRect.width / 2;
   }
 
   function startAutoHintTimer() {
-    if (autoHintMode === 'timed' && gameState === GameState.PLAY && currentWordIndex < content.length) {
+    if (autoHintMode === 'timed' && gameState !== GameState.START && currentWordIndex < content.length) {
       autoHintTimeout = setTimeout(() => {
         enterShownState();
       }, autoHintTimeoutSeconds * 1000);
@@ -872,7 +871,7 @@ const charCenter = charRect.left + charRect.width / 2;
 
   function validateInput(word) {
     let hadWrongInput = $state(false);
-    if (gameState === GameState.FINISH) return;
+    if (gameState === GameState.START) return;
     if (typeCancelled) {
       return;
     }
@@ -942,6 +941,7 @@ const charCenter = charRect.left + charRect.width / 2;
       }
       
       if (currentWordIndex >= content.length) {
+        if (gameState !== GameState.FINISH)
         finishGame();
       }
     }
@@ -1065,7 +1065,7 @@ const charCenter = charRect.left + charRect.width / 2;
   }
 
   function tryDelete() {
-    if (gameState === GameState.FINISH) return;
+    if (gameState === GameState.START) return;
     if (currentWordIndex === 0) return;
     
     // Check if there's an extra character at the current position
@@ -1115,7 +1115,7 @@ const charCenter = charRect.left + charRect.width / 2;
     compositionBackspaceLock = false;
   }, 200);
 
-  if (gameState !== GameState.PLAY) {
+  if (gameState === GameState.START) {
     compositionData = "";
     return;
   }
@@ -1280,7 +1280,7 @@ const charCenter = charRect.left + charRect.width / 2;
         lockScrollPosition();
         
         // Force a scroll update to ensure proper positioning
-        if (gameState === GameState.PLAY) {
+        if (gameState !== GameState.START) {
           setTimeout(() => updateScroll(), 100);
         }
       } else if (keyboardVisible && heightDiff < 50) {
@@ -1291,7 +1291,7 @@ const charCenter = charRect.left + charRect.width / 2;
         unlockScrollPosition();
         
         // Restore scroll position if needed
-        if (gameState === GameState.PLAY) {
+        if (gameState !== GameState.START) {
           setTimeout(() => updateScroll(), 100);
         }
       }
@@ -1389,7 +1389,7 @@ const charCenter = charRect.left + charRect.width / 2;
 </svelte:head>
 
 <div class="background">
-  {#if gameState !== GameState.PLAY}
+  {#if gameState === GameState.START}
     <input
       class="type-prep"
       type="text"
@@ -1575,7 +1575,7 @@ const charCenter = charRect.left + charRect.width / 2;
     </p>
   </div>
 
-  {#if gameState === GameState.PLAY}
+  {#if gameState !== GameState.START}
     <div style="height: 100vh"></div>
   {/if}
 
