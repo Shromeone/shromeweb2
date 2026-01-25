@@ -59,6 +59,7 @@
 
   let correctIndexes = $state([]);
   let wrongIndexes = $state([]);
+  let missingIndexes = $state([]);
   let startTime = 0;
   let gameState = $state(GameState.START);
   let timeTakenInMs = $state(0);
@@ -522,7 +523,116 @@ tryPressEnterFocus(e);
       enterUrlState();
     }
   }
+
+  // Handle arrow key navigation
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+    e.preventDefault(); // Prevent default scrolling behavior
+    handleArrowKeyNavigation(e.key);
+  }
 }
+
+  function handleArrowKeyNavigation(key) {
+    const currentChar = document.querySelector(`#char-${currentWordIndex}`);
+    if (!currentChar) return;
+
+    const currentRect = currentChar.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    // Calculate characters per line by finding the next character that's on a different line
+    const charsPerLine = calculateCharsPerLine();
+    
+    let newCurrentWordIndex = currentWordIndex;
+
+    switch (key) {
+      case 'ArrowLeft':
+        // Move left (decrease current character)
+        if (currentWordIndex > 0) {
+          newCurrentWordIndex = currentWordIndex - 1;
+        }
+        break;
+      
+      case 'ArrowRight':
+        // Move right (increase current character)
+        if (currentWordIndex < content.length - 1) {
+          // If current character is missing, skip over it by moving 2 positions
+          if (isMissingCharacter(currentWordIndex)) {
+            if (currentWordIndex + 2 <= content.length - 1) {
+              newCurrentWordIndex = currentWordIndex + 2;
+            } else {
+              // If we can't move 2 positions, move to the end
+              newCurrentWordIndex = content.length - 1;
+            }
+          } else {
+            newCurrentWordIndex = currentWordIndex + 1;
+          }
+        }
+        break;
+      
+      case 'ArrowUp':
+        // Move up (decrease by chars per line)
+        if (currentWordIndex >= charsPerLine) {
+          newCurrentWordIndex = currentWordIndex - charsPerLine;
+        } else {
+          // If we're on the first line, move to beginning
+          newCurrentWordIndex = 0;
+        }
+        break;
+      
+      case 'ArrowDown':
+        // Move down (increase by chars per line)
+        const maxIndex = content.length - 1;
+        if (currentWordIndex + charsPerLine <= maxIndex) {
+          newCurrentWordIndex = currentWordIndex + charsPerLine;
+        } else {
+          // If we're on the last line, move to end
+          newCurrentWordIndex = maxIndex;
+        }
+        break;
+    }
+
+    // Apply missing character logic: if the target character is to the right of a missing character,
+    // move to the missing character instead
+    if (newCurrentWordIndex > 0 && isMissingCharacter(newCurrentWordIndex - 1)) {
+      newCurrentWordIndex = newCurrentWordIndex - 1;
+    }
+
+    // Only update if the index actually changed
+    if (newCurrentWordIndex !== currentWordIndex) {
+      currentWordIndex = newCurrentWordIndex;
+      updateInputBoxPos();
+      
+      // Update hint logic if needed
+      if (hintCharIndex !== currentWordIndex) {
+        hintCharIndex = currentWordIndex;
+        updateCangjieCodeForChar(content[currentWordIndex]);
+        enterShownState();
+      }
+    }
+  }
+
+  function calculateCharsPerLine() {
+    // Find the first character on the second line to determine chars per line
+    const firstChar = document.querySelector('#char-0');
+    if (!firstChar) return 20; // Default fallback
+
+    const firstCharRect = firstChar.getBoundingClientRect();
+    const firstCharTop = firstCharRect.top;
+
+    // Look for the first character that's on a different line (different top position)
+    for (let i = 1; i < content.length; i++) {
+      const char = document.querySelector(`#char-${i}`);
+      if (char) {
+        const charRect = char.getBoundingClientRect();
+        if (Math.abs(charRect.top - firstCharTop) > 5) { // 5px threshold for line difference
+          return i;
+        }
+      }
+    }
+
+    // If all characters are on the same line, use a reasonable default
+    return Math.floor(content.length / 2) || 20;
+  }
 
   function halfInput(e) {
     // Handle different input types
@@ -684,14 +794,56 @@ tryPressEnterFocus(e);
       currentWord = content[currentWordIndex];
       const char = word[i];
       
-      // Use character mapping to check if input is correct
-      if (!areCharactersEquivalent(char, currentWord)) {
-        wrongIndexes = [...wrongIndexes, currentWordIndex];
-        hadWrongInput = true;
-      } else {
+      // Check if input matches current character
+      if (areCharactersEquivalent(char, currentWord)) {
+        // Correct input - mark as correct and move to next character
         correctIndexes = [...correctIndexes, currentWordIndex];
+        // If this was a missing character, remove it from missingIndexes
+        missingIndexes = missingIndexes.filter(index => index !== currentWordIndex);
+        wrongIndexes = wrongIndexes.filter(index => index !== currentWordIndex);
+        currentWordIndex++;
+      } else {
+        // Check if this is a missing character scenario
+        // Look ahead to see if the user typed the NEXT character instead
+        const nextCharIndex = currentWordIndex + 1;
+        if (nextCharIndex < content.length) {
+          const nextChar = content[nextCharIndex];
+          if (areCharactersEquivalent(char, nextChar)) {
+            // Missing character detected!
+            // Only mark as missing if the current character hasn't been processed yet
+            // (i.e., it's not already in correctIndexes or wrongIndexes)
+            if (!correctIndexes.includes(currentWordIndex) && !wrongIndexes.includes(currentWordIndex)) {
+              // Mark current character as missing (wrong)
+              wrongIndexes = [...wrongIndexes, currentWordIndex];
+              missingIndexes = [...missingIndexes, currentWordIndex];
+              // Skip current character and move to the next one
+              currentWordIndex++;
+              // Now process the typed character as correct for the new current position
+              if (currentWordIndex < content.length) {
+                correctIndexes = [...correctIndexes, currentWordIndex];
+                currentWordIndex++;
+              }
+              hadWrongInput = true;
+            } else {
+              // Current character was already processed, treat as regular wrong input
+              wrongIndexes = [...wrongIndexes, currentWordIndex];
+              currentWordIndex++;
+              hadWrongInput = true;
+            }
+          } else {
+            // Not a missing character - regular wrong input
+            wrongIndexes = [...wrongIndexes, currentWordIndex];
+            currentWordIndex++;
+            hadWrongInput = true;
+          }
+        } else {
+          // At the end of content, regular wrong input
+          wrongIndexes = [...wrongIndexes, currentWordIndex];
+          currentWordIndex++;
+          hadWrongInput = true;
+        }
       }
-      currentWordIndex++;
+      
       if (currentWordIndex >= content.length) {
         finishGame();
       }
@@ -796,10 +948,27 @@ tryPressEnterFocus(e);
   function tryDelete() {
     if (gameState === GameState.FINISH) return;
     if (currentWordIndex === 0) return;
-    currentWordIndex--;
+    
+    // Check if the previous character is a missing character
+    const previousCharIndex = currentWordIndex - 2;
+    if (missingIndexes.includes(previousCharIndex)) {
+      currentWordIndex--;
+          updateInputBoxPos();
+    wrongIndexes = wrongIndexes.filter((x) => x !== currentWordIndex);
+    correctIndexes = correctIndexes.filter((x) => x !== currentWordIndex);
+    missingIndexes = missingIndexes.filter((x) => x !== currentWordIndex);
+      // If previous character is missing, move to that character
+      tryDelete();
+      return;
+    } else {
+      // Normal backspace behavior
+      currentWordIndex--;
+    }
+    
     updateInputBoxPos();
     wrongIndexes = wrongIndexes.filter((x) => x !== currentWordIndex);
     correctIndexes = correctIndexes.filter((x) => x !== currentWordIndex);
+    missingIndexes = missingIndexes.filter((x) => x !== currentWordIndex);
   }
 
   async function compoEnd(e) {
@@ -843,6 +1012,7 @@ tryPressEnterFocus(e);
     timeTakenInMs = 0;
     wrongIndexes = [];
     correctIndexes = [];
+    missingIndexes = [];
     currentWordIndex = 0;
     // input = "";
     clearInput();
@@ -937,6 +1107,12 @@ tryPressEnterFocus(e);
   let wrongWords = $derived(wrongIndexes.length);
   let currentWord = $derived(content[currentWordIndex]);
   let showInputDisplay = $derived(isCompo && input !== "");
+  
+  // Function to check if a character index is a missing character
+  function isMissingCharacter(index) {
+    // A character is "missing" if it's in the missingIndexes array
+    return missingIndexes.includes(index);
+  }
 </script>
 
 <svelte:head>
@@ -1003,20 +1179,60 @@ tryPressEnterFocus(e);
       <div
         class="char"
         id="char-{index}"
-        onclick={() => {
-          if (hintCharIndex !== index) {
-            // Different character clicked - move hints to that character, set to shown
-            hintCharIndex = index;
-            updateCangjieCodeForChar(char);
-            enterShownState();
+        onclick={(e) => {
+          // Get the click position relative to the character element
+          const rect = e.currentTarget.getBoundingClientRect();
+          const clickX = e.clientX;
+          const charWidth = rect.width;
+          const clickPosition = clickX - rect.left;
+          
+          // Determine which side was clicked (left or right)
+          const isLeftSide = clickPosition < charWidth / 2;
+          
+          // Store the original currentWordIndex to check if it changes
+          const originalCurrentWordIndex = currentWordIndex;
+          
+          if (isLeftSide) {
+            // Clicked on left side - move to current character
+            currentWordIndex = index;
+            
+            // Handle missing character logic: if clicking to the left of a character that's next to a missing character,
+            // move to the missing character instead
+            if (index > 0 && isMissingCharacter(index - 1)) {
+              currentWordIndex = index - 1;
+            }
           } else {
-            // Same character clicked
-            if (hintState === HintState.SHOWN) {
-              enterUrlState();
-            } else if (hintState === HintState.HIDDEN && index === currentWordIndex) {
-              enterShownState();
+            // Clicked on right side - move to next character
+            currentWordIndex = index + 1;
+            
+            // Handle missing character logic: if clicking to the right of a missing character,
+            // move to the missing character instead of the next character
+            if (index < content.length - 1 && isMissingCharacter(index)) {
+              currentWordIndex = index;
             }
           }
+          
+          // Update input box position and caret
+          updateInputBoxPos();
+          
+          // Only show hint if the click did not change the current character
+          if (currentWordIndex === originalCurrentWordIndex) {
+            // Character didn't change, handle hint logic
+            if (hintCharIndex !== currentWordIndex) {
+              hintCharIndex = currentWordIndex;
+              updateCangjieCodeForChar(content[currentWordIndex]);
+              enterShownState();
+            } else {
+              if (hintState === HintState.SHOWN) {
+                enterUrlState();
+              } else if (hintState === HintState.HIDDEN && currentWordIndex === currentWordIndex) {
+                enterShownState();
+              }
+            }
+          } else {
+            hintState = HintState.HIDDEN;
+          }
+          // If currentWordIndex changed, don't show hint - prioritize caret movement
         }}
       >
         {#if hintCharIndex === index && hintState === HintState.URL}
@@ -1030,6 +1246,8 @@ tryPressEnterFocus(e);
                   <p>{char}</p>
                 </div>
               </div>
+            {:else if isMissingCharacter(index)}
+              <p class="missing">{char}</p>
             {:else if wrongIndexes.includes(index)}
               <p class="wrong">{char}</p>
             {:else if correctIndexes.includes(index)}
@@ -1045,6 +1263,8 @@ tryPressEnterFocus(e);
                 <p>{char}</p>
               </div>
             </div>
+          {:else if isMissingCharacter(index)}
+            <p class="missing">{char}</p>
           {:else if wrongIndexes.includes(index)}
             <p class="wrong">{char}</p>
           {:else if correctIndexes.includes(index)}
@@ -1433,6 +1653,14 @@ tryPressEnterFocus(e);
 
   .test-content .wrong {
     color: rgb(221, 59, 59);
+    /* border: 1px solid rgb(194, 143, 143); */
+  }
+
+  .test-content .missing {
+    color: lightgrey;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-decoration-color: lightgrey;
     /* border: 1px solid rgb(194, 143, 143); */
   }
 
