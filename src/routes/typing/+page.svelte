@@ -76,6 +76,7 @@
   let caretUpdateInterval = null;
 
   let inputBox = $state();
+  let scrollContainer = $state();
   let inputDisplay = $state();
   let typePrep = $state();
   let typeCancelled = false;
@@ -452,15 +453,22 @@ const charCenter = charRect.left + charRect.width / 2;
     updateCaretPosition();
     // Update scroll position after updating input box position
       updateScroll();
+      tryFocus();
   }
 
   function updateCaretPosition(resetAnimation = true) {
     const currentChar = document.querySelector(`#char-${currentWordIndex}`);
     if (!currentChar || !caretElement) return;
+     const currentScrollTop = scrollContainer.scrollTop;
+
     
-    const rect = currentChar.getBoundingClientRect();
-    const targetTop = rect.top + scrollY + rect.height * 0.25;
-    let targetLeft = rect.left;
+    // Get the character position relative to the scroll container
+    const charRect = currentChar.getBoundingClientRect();
+    const containerRect = scrollContainer.getBoundingClientRect();
+    
+    // Calculate position relative to the scroll container
+    const targetTop = charRect.top - containerRect.top + charRect.height * 0.25 + currentScrollTop;
+    let targetLeft = charRect.left - containerRect.left;
     
     // Check if there's an extra character associated with current position
     const hasExtraChar = hasExtraCharacterAssociated(currentWordIndex);
@@ -471,7 +479,7 @@ const charCenter = charRect.left + charRect.width / 2;
       const extraCharElements = document.querySelectorAll(`[id^="extra-char-${currentWordIndex}-"]`);
       if (extraCharElements.length > 0) {
         const extraCharRect = extraCharElements[0].getBoundingClientRect();
-        targetLeft = extraCharRect.left;
+        targetLeft = extraCharRect.left - containerRect.left;
       }
     }
     
@@ -753,10 +761,8 @@ const charCenter = charRect.left + charRect.width / 2;
   }
 
   function updateScroll() {
-    console.log("updatescroll");
-      updateCaretPosition(false);
+      updateCaretPosition();
     const currentChar = document.querySelector(`#char-${currentWordIndex}`);
-    const scrollContainer = document.querySelector('.scroll-container');
     if (!currentChar || !scrollContainer) return;
     
     // Use requestAnimationFrame to ensure DOM is updated
@@ -1264,7 +1270,6 @@ const charCenter = charRect.left + charRect.width / 2;
       }
       
       // Lock the scroll container from user scrolling
-      const scrollContainer = document.querySelector('.scroll-container');
       if (scrollContainer) {
         scrollContainer.style.overflow = 'hidden';
         scrollContainer.addEventListener('wheel', preventScroll, { passive: false });
@@ -1292,7 +1297,6 @@ const charCenter = charRect.left + charRect.width / 2;
       }
       
       // Restore scroll container scrolling
-      const scrollContainer = document.querySelector('.scroll-container');
       if (scrollContainer) {
         scrollContainer.style.overflow = 'auto';
         scrollContainer.removeEventListener('wheel', preventScroll);
@@ -1323,19 +1327,6 @@ const charCenter = charRect.left + charRect.width / 2;
 </svelte:head>
 
 <div class="background">
-  <div class="info-bar {gameState === GameState.PLAY ? 'fixed-top' : 'hidden'}">
-    {#if gameState !== 3}
-      {#if timeLimit > 0}
-        <p>剩餘時間: {Math.ceil(timeLimit - timeElapsed / 1000)}秒</p>
-      {/if}
-      <p>時間: {(timeTakenInMs / 1000).toFixed(2) + "s"}</p>
-      <p>速度: {WPM.toFixed(1)}WPM</p>
-      <p>準確度: {(accuracy * 100).toFixed(1) + "%"}</p>
-      <p>正確: {correctWords}字</p>
-      <p>錯誤: {wrongWords}字</p>
-      <p>分數: {points}</p>
-    {/if}
-  </div>
   <input
     type="text"
     id="type-input"
@@ -1357,7 +1348,16 @@ const charCenter = charRect.left + charRect.width / 2;
   >
     {showInputDisplay ? input : ""}
   </div>
-  <div class="scroll-container">
+  <div class="scroll-container" bind:this={scrollContainer}>
+    <div class="info-bar {gameState === GameState.PLAY ? 'fixed-top' : 'hidden'}">
+      {#if gameState !== 3}
+        {#if timeLimit > 0}
+          <p>剩餘時間: {Math.ceil(timeLimit - timeElapsed / 1000)}秒</p>
+        {/if}
+        <p>速度: {WPM.toFixed(1)}WPM</p>
+        <p>準確度: {(accuracy * 100).toFixed(1) + "%"}</p>
+      {/if}
+    </div>
       {#if gameState === GameState.START}
     <input
       class="type-prep"
@@ -1632,7 +1632,7 @@ const charCenter = charRect.left + charRect.width / 2;
 
 <style>
   #start-partition {
-    height: 25vh;}
+    height: 12vh;}
   .passage-select,
   .time-select,
   .auto-hint-select {
@@ -1841,21 +1841,31 @@ const charCenter = charRect.left + charRect.width / 2;
   .info-bar {
     display: flex;
     gap: 20px;
-  }
-
-  .info-bar.fixed-top {
-    position: fixed;
+    position: sticky;
     top: 0;
-    left: 0;
-    right: 0;
     background-color: rgba(0, 0, 0, 0.9);
     padding: 10px 20px;
     z-index: 999;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .info-bar p {
+    font-size: 0.8rem; /* Smaller labels */
+    margin: 0;
+    color: #ccc;
+  }
+
+  .info-bar p:last-child {
+    font-size: 1.5rem; /* Larger actual information */
+    color: white;
+    font-weight: bold;
+    margin-left: auto;
   }
 
   .scroll-container {
-    width: 80vw;
+    position: relative;
+    width: 90vw;
     height: 70vh;
     overflow-y: auto;
     overflow-x: hidden;
