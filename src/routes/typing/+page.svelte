@@ -73,7 +73,7 @@
   let updateTimerInterval = null;
   let updateInfoInterval = null;
   let focusInputInterval = null;
-  let caretUpdateInterval = null;
+  let updateCaretInterval = null;
 
   let inputBox = $state();
   let scrollContainer = $state();
@@ -140,8 +140,7 @@
   let isTimeUp = false;
   let caretElement = $state();
 
-  const autoScrollPercentage = 0.3;
-  const autoScrollOffset = 0.1;
+  const autoScrollPercentage = 0.4;
   const inputBoxOffset = {
     x: 0,
     y: 20,
@@ -149,6 +148,7 @@
   onMount(() => {
     // initCangjieMap();
     setResultsPanelVisibility(false);
+    updateCaretInterval = setInterval(() => {updateCaretPosition(false)}, 100);
     // setSettingsVisibility(false);
     content = content.replace(/(?:\r\n|\r|\n)/g, "");
     if (removeContentSpace) content = content.replace(/\s/g, "");
@@ -242,7 +242,7 @@ const charCenter = charRect.left + charRect.width / 2;
     // Position hints container at the top-left of the character
     hintsContainer.style.left = "0";
     hintsContainer.style.top = "";
-    hintsContainer.style.bottom = "5.5rem";
+    hintsContainer.style.bottom = "3.5rem";
     
     // Check if there's enough space on the right
     const spaceOnRight = viewportWidth - charRect.right;
@@ -323,7 +323,6 @@ const charCenter = charRect.left + charRect.width / 2;
     // clearInterval(updateTimerInterval);
     // clearInterval(updateInfoInterval);
     // clearInterval(focusInputInterval);
-    // clearInterval(caretUpdateInterval);
     // clearTimeout(autoHintTimeout);
     // clearTimeout(revealTimeout);
     // autoHintTimeout = null;
@@ -487,7 +486,7 @@ const charCenter = charRect.left + charRect.width / 2;
     caretElement.style.transition = 'top 0.2s ease-out, left 0.2s ease-out';
     caretElement.style.top = targetTop + "px";
     caretElement.style.left = targetLeft + "px";
-    caretElement.style.opacity = focused ? "1" : "0";
+    caretElement.style.opacity = focused ? "1" : "0.5";
     
     // Reset the blinking animation when caret moves
     if (resetAnimation)
@@ -770,7 +769,7 @@ const charCenter = charRect.left + charRect.width / 2;
       const charRect = currentChar.getBoundingClientRect();
       const containerRect = scrollContainer.getBoundingClientRect();
       const containerHeight = containerRect.height;
-      const targetPosition = containerHeight * 0.3; // 30% from top of container
+      const targetPosition = containerHeight * autoScrollPercentage; //  from top of container
       const charTopInContainer = charRect.top - containerRect.top;
       
       // Calculate the scroll position needed to place the character at 30% from top of container
@@ -1152,7 +1151,6 @@ const charCenter = charRect.left + charRect.width / 2;
     currentWordIndex = 0;
     updateInputBoxPos();
     updateScroll();
-    updateCaretPosition();
     // input = "";
     clearInput();
     lastProcessedInput = ""; // Reset on restart
@@ -1163,8 +1161,7 @@ const charCenter = charRect.left + charRect.width / 2;
     inputBox.focus();
     clearInterval(updateTimerInterval);
     clearInterval(updateInfoInterval);
-    clearInterval(focssrtusInputInterval);
-    clearInterval(caretUpdateInterval);
+    clearInterval(focusInputInterval);
     clearTimeout(autoHintTimeout);
     clearTimeout(revealTimeout);
     autoHintTimeout = null;
@@ -1632,7 +1629,7 @@ const charCenter = charRect.left + charRect.width / 2;
 
 <style>
   #start-partition {
-    height: 12vh;}
+    height: 20vh;}
   .passage-select,
   .time-select,
   .auto-hint-select {
@@ -2001,6 +1998,7 @@ const charCenter = charRect.left + charRect.width / 2;
   .type-prep {
     font-size: 2rem;
     width: 80%;
+    height: 5vh;
     display: inline-block;
   }
 
@@ -2166,7 +2164,7 @@ const charCenter = charRect.left + charRect.width / 2;
     position: absolute;
     width: 2px;
     height: var(--char-font-size, max(18px, 3.5vh));
-    background-color: skyblue;
+    background-color: rgb(87, 191, 255);
     z-index: 1;
     pointer-events: none;
     transition: top 0.2s ease-out, left 0.2s ease-out, opacity 0.3s ease;
