@@ -151,8 +151,8 @@
     // setSettingsVisibility(false);
     content = content.replace(/(?:\r\n|\r|\n)/g, "");
     if (removeContentSpace) content = content.replace(/\s/g, "");
-    updateInputBoxPos();
-    inputBox.focus();
+    updateInputBoxPos(false);
+    typePrep.focus();
     document.onclick = (e) => {
 tryPressEnterFocus(e);
       if (document.activeElement === inputBox) return;
@@ -180,13 +180,7 @@ tryPressEnterFocus(e);
     
     // Close results panel when clicking outside
     document.addEventListener('click', handleResultsOutsideClick);
-    
-    // Handle viewport changes (especially important for mobile)
-    window.addEventListener('resize', handleViewportChange);
-    window.addEventListener('orientationchange', handleViewportChange);
-    
-    // Handle virtual keyboard appearance
-    setupVirtualKeyboardHandling();
+
   });
 
   onDestroy(() => {
@@ -219,6 +213,9 @@ tryPressEnterFocus(e);
   function tryPressEnterFocus(e) {
     if (document.activeElement !== typePrep) return;
     if (e.key !== "Enter") return;
+    currentWordIndex = 0;
+    enterHiddenState();
+    updateInputBoxPos();
     inputBox.focus();
   }
 
@@ -276,13 +273,14 @@ const charCenter = charRect.left + charRect.width / 2;
     updateInfoInterval = setInterval(updateInfo, 2000);
     updateTimerInterval = setInterval(updateTimer, 100);
     focusInputInterval = setInterval(tryFocus, 1000);
+    lockScrollPosition();
     if (autoHintMode === 'always') {
       enterShownState();
     } else if (autoHintMode === 'timed') {
       startAutoHintTimer();
     }
     // Scroll to position the first character at 30% from top
-    setTimeout(() => updateScroll(), 100);
+    // setInterval(() => updateScroll(), 100);
   }
 
   function updateTimer(time = -1) {
@@ -456,7 +454,7 @@ const charCenter = charRect.left + charRect.width / 2;
       updateScroll();
   }
 
-  function updateCaretPosition() {
+  function updateCaretPosition(resetAnimation = true) {
     const currentChar = document.querySelector(`#char-${currentWordIndex}`);
     if (!currentChar || !caretElement) return;
     
@@ -484,8 +482,8 @@ const charCenter = charRect.left + charRect.width / 2;
     caretElement.style.opacity = focused ? "1" : "0";
     
     // Reset the blinking animation when caret moves
+    if (resetAnimation)
     resetCaretBlink();
-    tryFocus();
   }
 
   function resetCaretBlink() {
@@ -755,42 +753,37 @@ const charCenter = charRect.left + charRect.width / 2;
   }
 
   function updateScroll() {
+    console.log("updatescroll");
+      updateCaretPosition(false);
     const currentChar = document.querySelector(`#char-${currentWordIndex}`);
-    if (!currentChar) return;
+    const scrollContainer = document.querySelector('.scroll-container');
+    if (!currentChar || !scrollContainer) return;
     
     // Use requestAnimationFrame to ensure DOM is updated
     requestAnimationFrame(() => {
       const charRect = currentChar.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      const targetPosition = viewportHeight * 0.3; // 30% from top
-      const currentCharTop = charRect.top;
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const containerHeight = containerRect.height;
+      const targetPosition = containerHeight * 0.3; // 30% from top of container
+      const charTopInContainer = charRect.top - containerRect.top;
       
-      // Calculate the scroll position needed to place the character at 30% from top
-      // Formula: scrollTarget = currentCharTop + currentScrollY - targetPosition
-      const currentScrollY = window.scrollY;
-      const scrollTarget = currentCharTop + currentScrollY - targetPosition;
+      // Calculate the scroll position needed to place the character at 30% from top of container
+      const currentScrollTop = scrollContainer.scrollTop;
+      const scrollTarget = charTopInContainer + currentScrollTop - targetPosition;
       
       // Add a threshold to prevent excessive scrolling when already close
-      // Use a slightly larger threshold for mobile devices
-      const isMobile = window.innerWidth <= 768;
-      const threshold = isMobile ? 15 : 5; // pixels (increased for mobile)
+      const threshold = 5; // pixels
       
       // Only scroll if the character is not already at the target position
-      if (Math.abs(currentCharTop - targetPosition) > threshold) {
-        // Use smooth scrolling for better UX, but check if it's supported
-        if ('scrollBehavior' in document.documentElement.style) {
-          window.scrollTo({
-            top: scrollTarget,
-            behavior: 'smooth'
-          });
-        } else {
-          // Fallback for older browsers
-          window.scrollTo(0, scrollTarget);
-        }
+      if (Math.abs(charTopInContainer - targetPosition) > threshold) {
+        // Use smooth scrolling for better UX
+        scrollContainer.scrollTo({
+          top: scrollTarget,
+          behavior: 'smooth'
+        });
       }
       
       // Update caret position after scroll
-      updateCaretPosition();
     });
   }
 
@@ -1174,13 +1167,6 @@ const charCenter = charRect.left + charRect.width / 2;
     updateTimer(0);
   }
 
-  function handleViewportChange() {
-    // Handle viewport changes (especially important for mobile)
-    // This function will be called on resize and orientation change
-      // Re-calculate and update scroll position when viewport changes
-      updateScroll();
-  }
-
   function setResultsPanelVisibility(show = false) {
     if (show) {
       resultsScreen.classList.remove("hidden");
@@ -1260,45 +1246,6 @@ const charCenter = charRect.left + charRect.width / 2;
     return missingIndexes.includes(index);
   }
 
-  function setupVirtualKeyboardHandling() {
-    let initialViewportHeight = window.innerHeight;
-    let keyboardVisible = false;
-    let lastScrollTop = 0;
-    let scrollLockTimer = null;
-    
-    function handleVirtualKeyboard() {
-      const currentViewportHeight = window.innerHeight;
-      const heightDiff = initialViewportHeight - currentViewportHeight;
-      
-      // If viewport height decreased significantly, virtual keyboard is likely visible
-      if (heightDiff > 150) { // Threshold for keyboard detection
-        keyboardVisible = true;
-        // Store current scroll position
-        lastScrollTop = window.scrollY;
-        
-        // Lock scroll position to prevent user scrolling when keyboard is visible
-        lockScrollPosition();
-        
-        // Force a scroll update to ensure proper positioning
-        if (gameState !== GameState.START) {
-          setTimeout(() => updateScroll(), 100);
-        }
-      } else if (keyboardVisible && heightDiff < 50) {
-        // Virtual keyboard was dismissed
-        keyboardVisible = false;
-        
-        // Remove scroll lock
-        unlockScrollPosition();
-        
-        // Restore scroll position if needed
-        if (gameState !== GameState.START) {
-          setTimeout(() => updateScroll(), 100);
-        }
-      }
-      
-      // Update initial height for next check
-      initialViewportHeight = currentViewportHeight;
-    }
     
     function lockScrollPosition() {
       // Store current scroll position
@@ -1314,6 +1261,14 @@ const charCenter = charRect.left + charRect.width / 2;
       const background = document.querySelector('.background');
       if (background) {
         background.style.overflow = 'hidden';
+      }
+      
+      // Lock the scroll container from user scrolling
+      const scrollContainer = document.querySelector('.scroll-container');
+      if (scrollContainer) {
+        scrollContainer.style.overflow = 'hidden';
+        scrollContainer.addEventListener('wheel', preventScroll, { passive: false });
+        scrollContainer.addEventListener('touchmove', preventScroll, { passive: false });
       }
     }
     
@@ -1335,42 +1290,21 @@ const charCenter = charRect.left + charRect.width / 2;
       if (background) {
         background.style.overflow = '';
       }
+      
+      // Restore scroll container scrolling
+      const scrollContainer = document.querySelector('.scroll-container');
+      if (scrollContainer) {
+        scrollContainer.style.overflow = 'auto';
+        scrollContainer.removeEventListener('wheel', preventScroll);
+        scrollContainer.removeEventListener('touchmove', preventScroll);
+      }
     }
     
-    // Listen for resize events (which happen when virtual keyboard appears/disappears)
-    window.addEventListener('resize', handleVirtualKeyboard);
-    
-    // Also listen for focus/blur events on input to detect keyboard
-    inputBox.addEventListener('focus', () => {
-      setTimeout(handleVirtualKeyboard, 100);
-    });
-    
-    inputBox.addEventListener('blur', () => {
-      // Add a small delay to allow for keyboard dismissal detection
-      setTimeout(handleVirtualKeyboard, 300);
-    });
-    
-    // Handle scroll events to maintain position when keyboard is visible
-    window.addEventListener('scroll', () => {
-      if (keyboardVisible) {
-        // If user tries to scroll, reset to original position
-        if (window.scrollY !== lastScrollTop) {
-          window.scrollTo(0, lastScrollTop);
-        }
-      }
-    });
-    
-    // Cleanup function
-    return () => {
-      window.removeEventListener('resize', handleVirtualKeyboard);
-      window.removeEventListener('scroll', () => {});
-      inputBox.removeEventListener('focus', handleVirtualKeyboard);
-      inputBox.removeEventListener('blur', handleVirtualKeyboard);
-      
-      // Ensure scroll is unlocked on cleanup
-      unlockScrollPosition();
-    };
-  }
+    function preventScroll(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
 </script>
 
 <svelte:head>
@@ -1389,14 +1323,6 @@ const charCenter = charRect.left + charRect.width / 2;
 </svelte:head>
 
 <div class="background">
-  {#if gameState === GameState.START}
-    <input
-      class="type-prep"
-      type="text"
-      placeholder="喺度調整輸入法，準備好就撳Enter進入測試"
-      bind:this={typePrep}
-    />
-  {/if}
   <div class="info-bar {gameState === GameState.PLAY ? 'fixed-top' : 'hidden'}">
     {#if gameState !== 3}
       {#if timeLimit > 0}
@@ -1410,7 +1336,6 @@ const charCenter = charRect.left + charRect.width / 2;
       <p>分數: {points}</p>
     {/if}
   </div>
-  <div id="start-partition"></div>
   <input
     type="text"
     id="type-input"
@@ -1432,7 +1357,17 @@ const charCenter = charRect.left + charRect.width / 2;
   >
     {showInputDisplay ? input : ""}
   </div>
-  <div class="test-content {gameState === GameState.PLAY ? 'with-fixed-info' : ''}" style="--char-font: {fontSelect}">
+  <div class="scroll-container">
+      {#if gameState === GameState.START}
+    <input
+      class="type-prep"
+      type="text"
+      placeholder="喺度調整輸入法，準備好就撳Enter進入測試"
+      bind:this={typePrep}
+    />
+    {/if}
+    <div id="start-partition"></div>
+    <div class="test-content {gameState === GameState.PLAY ? 'with-fixed-info' : ''}" style="--char-font: {fontSelect}">
     {#each content as char, index (index)}
       <!-- Render extra characters that should appear before this character -->
       {#each extraCharacters.filter(ec => ec.index === index) as extraChar}
@@ -1693,6 +1628,7 @@ const charCenter = charRect.left + charRect.width / 2;
     <img src={settingsIcon} alt="settings" class="settings-icon {isSpinning ? 'spinning' : ''} {spinDirection}" />
   </button>
 </div>
+</div>
 
 <style>
   #start-partition {
@@ -1883,6 +1819,16 @@ const charCenter = charRect.left + charRect.width / 2;
     margin: 0;
     /* background-color: black; */
     overflow-x: hidden;
+    overflow-y: hidden; /* Prevent main page scrolling */
+  }
+  
+  /* Override layout styles for typing page */
+  :global(body) {
+    overflow-y: hidden !important;
+  }
+  
+  :global(html) {
+    overflow-y: hidden !important;
   }
 
   .background {
@@ -1906,6 +1852,18 @@ const charCenter = charRect.left + charRect.width / 2;
     padding: 10px 20px;
     z-index: 999;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  }
+
+  .scroll-container {
+    width: 80vw;
+    height: 70vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    margin: 0 auto;
+    padding: 20px;
+    border: 2px solid #333;
+    border-radius: 8px;
+    background-color: #1a1a1a;
   }
 
   .test-content {
