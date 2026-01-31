@@ -1665,12 +1665,14 @@
       {/if}
     </div>
     {#if gameState === GameState.START}
-      <input
-        class="type-prep"
-        type="text"
-        placeholder="喺度調整輸入法，準備好就撳Enter進入測試"
-        bind:this={typePrep}
-      />
+      <div class="type-prep-container">
+        <input
+          class="type-prep"
+          type="text"
+          placeholder="喺度調整輸入法，準備好就撳Enter進入測試"
+          bind:this={typePrep}
+        />
+      </div>
     {/if}
     <div id="start-partition"></div>
     <div
@@ -2266,7 +2268,7 @@
     background: rgb(61, 61, 61);
     transform: translateX(100%);
     transition: transform 0.3s ease;
-    z-index: 101;
+    z-index: 1001;
     padding: 1.25rem;
     box-sizing: border-box;
   }
@@ -2568,6 +2570,16 @@
 
   p {
     color: white;
+  }
+
+  .type-prep-container {
+    position: sticky;
+    top: 0;
+    background-color: rgba(0, 0, 0, 0.8);
+    padding: 10px;
+    z-index: 1000;
+    border-radius: 8px;
+    margin-bottom: 20px;
   }
 
   .type-prep {
