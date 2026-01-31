@@ -1485,7 +1485,7 @@
     // Close settings panel when clicking outside of it
     if (settingsOpen) {
       const settingsPanel = document.querySelector(".settings-panel");
-      const settingsBtn = document.querySelector(".settings-btn");
+      const settingsBtn = document.querySelector("#settings-button");
 
       if (settingsPanel && settingsBtn) {
         const isClickOutside =
@@ -1832,19 +1832,83 @@
     {/if}
 
     <div class="bottom-left-buttons">
+      <button
+        id="settings-button"
+        class="btn-secondary bottom-btn"
+        onclick={handleSettingsToggle}
+        onmouseenter={(e) => showHoverPanel("設定", e)}
+        onmousemove={updateHoverPanelPosition}
+        onmouseleave={hideHoverPanel}
+      >
+        <img
+          src={settingsIcon}
+          alt="settings"
+          class="settings-icon {isSpinning ? 'spinning' : ''} {spinDirection}"
+          style="width: 2rem; height: 2rem; filter: invert(1);"
+        />
+      </button>
+      <button
+        class="btn-primary bottom-btn"
+        onclick={() => (showPassageSelection = true)}
+        onmouseenter={(e) => showHoverPanel("選擇文章", e)}
+        onmousemove={updateHoverPanelPosition}
+        onmouseleave={hideHoverPanel}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          class="size-6"
+          style="width: 2rem; height: 2rem;"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
+          />
+        </svg>
+      </button>
       {#if gameState === GameState.PLAY}
         <button
           id="end-test-btn"
           class="btn-danger bottom-btn"
-          onmouseenter={cancelInput}
-          onclick={finishGame}>結束遊戲</button
+          onmouseenter={(e) => {
+            cancelInput();
+            showHoverPanel("結束遊戲", e);
+          }}
+          onmousemove={updateHoverPanelPosition}
+          onmouseleave={hideHoverPanel}
+          onclick={finishGame}
         >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+            class="size-6"
+            style="width: 2rem; height: 2rem;"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M6 18 18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
       {/if}
 
       {#if gameState !== GameState.START}
         <button
           class="btn-secondary bottom-btn"
-          onmouseenter={cancelInput}
+          onmouseenter={(e) => {
+            cancelInput();
+            showHoverPanel("重新開始", e);
+          }}
+          onmousemove={updateHoverPanelPosition}
+          onmouseleave={hideHoverPanel}
           onclick={restart}
         >
           <svg
@@ -1868,34 +1932,30 @@
       {#if gameState === GameState.FINISH}
         <button
           class="btn-primary bottom-btn"
-          onclick={() => setResultsPanelVisibility(true)}>查看成績</button
+          onclick={() => setResultsPanelVisibility(true)}
+          onmouseenter={(e) => showHoverPanel("查看成績", e)}
+          onmousemove={updateHoverPanelPosition}
+          onmouseleave={hideHoverPanel}
         >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+            class="size-6"
+            style="width: 2rem; height: 2rem;"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+            />
+          </svg>
+        </button>
       {/if}
 
       <!-- New Passage Selection Button -->
-      <button
-        class="btn-primary bottom-btn"
-        onclick={() => (showPassageSelection = true)}
-        onmouseenter={(e) => showHoverPanel("選擇文章", e)}
-        onmousemove={updateHoverPanelPosition}
-        onmouseleave={hideHoverPanel}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke-width="1.5"
-          stroke="currentColor"
-          class="size-6"
-          style="width: 2rem; height: 2rem;"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-          />
-        </svg>
-      </button>
     </div>
 
     <!-- Passage Selection Modal -->
@@ -2102,14 +2162,6 @@
         </div>
       </div>
     </div>
-
-    <button class="settings-btn" onclick={handleSettingsToggle}>
-      <img
-        src={settingsIcon}
-        alt="settings"
-        class="settings-icon {isSpinning ? 'spinning' : ''} {spinDirection}"
-      />
-    </button>
 
     <!-- Global Hover Panel -->
     <div
@@ -2629,21 +2681,6 @@
 
   #cangjie-code span {
     width: 4rem;
-  }
-
-  .settings-btn {
-    position: fixed;
-    top: 1rem;
-    right: 1rem;
-    background: none;
-    border: none;
-    cursor: pointer;
-    z-index: 102;
-    width: 7em;
-    height: 7em;
-    display: flex;
-    align-items: center;
-    justify-content: center;
   }
 
   .settings-icon {
