@@ -1,6 +1,6 @@
 <script>
   import "../app.css";
-  import { injectAnalytics } from '@vercel/analytics/sveltekit';
+  import { injectAnalytics } from "@vercel/analytics/sveltekit";
   injectAnalytics();
   let { children } = $props();
 </script>
@@ -27,7 +27,7 @@
   {children}
 </body>
 <footer class="version-footer">
-  <p>Last updated: 2026-01-26</p>
+  <p>Last updated: 2026-01-31</p>
 </footer>
 
 <style>

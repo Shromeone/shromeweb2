@@ -1844,7 +1844,7 @@
           src={settingsIcon}
           alt="settings"
           class="settings-icon {isSpinning ? 'spinning' : ''} {spinDirection}"
-          style="width: 2rem; height: 2rem; filter: invert(1);"
+          style="width: 2rem; height: 2rem;"
         />
       </button>
       <button
@@ -2066,8 +2066,16 @@
           </div>
           <div class="result-item">
             <h3 class="result-label" class:fade-in={showAccuracy}>準確度</h3>
-            <span class="result-value" class:fade-in={showAccuracy}
-              >{animatedAccuracy.toFixed(1)}%</span
+            <span
+              class="result-value"
+              class:fade-in={showAccuracy}
+              onmouseenter={(e) =>
+                showHoverPanel(
+                  `${correctWords}字正確/總共${correctWords + wrongWords}字`,
+                  e,
+                )}
+              onmousemove={updateHoverPanelPosition}
+              onmouseleave={hideHoverPanel}>{animatedAccuracy.toFixed(1)}%</span
             >
           </div>
           <div class="result-item">
