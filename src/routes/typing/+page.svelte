@@ -10,6 +10,7 @@
   import "./passages.json";
   import { cangjieMap } from "$lib/data/cangjiedata.js";
   import { areCharactersEquivalent } from "$lib/utils/character-mapping.js";
+  import PassageSelection from "./PassageSelection.svelte";
 
   // let cangjieMap = {};
 
@@ -107,6 +108,12 @@
   let timeLimit = $state(60);
   let fontSelect = $state("LXGW WenKai TC");
 
+  // Passage selection state
+  let showPassageSelection = $state(false);
+  let currentPassage = $state(
+    passages[Math.round(Math.random() * (Object.keys(passages).length - 1))],
+  );
+
   const HintState = Object.freeze({
     HIDDEN: 0,
     SHOWN: 1,
@@ -167,6 +174,7 @@
       tryPressEnterFocus(e);
       if (document.activeElement === inputBox) return;
       if (document.activeElement === typePrep) return;
+      if (showPassageSelection) return;
       if (settingsOpen) return;
       // Don't focus input if clicking on a link or character
       if (e.target.closest("a") || e.target.closest(".char")) return;
@@ -179,6 +187,7 @@
       if (document.activeElement === typePrep) return;
       if (settingsOpen) return;
       if (e.target.closest("a") || e.target.closest(".char")) return;
+      if (showPassageSelection) return;
       e.preventDefault();
       if (!inputBox) return;
       inputBox.focus();
@@ -463,7 +472,35 @@
     const corrects = correctIndexes.length;
     const wordsTyped = corrects + wrongs;
     accuracy = 1 - wrongs / wordsTyped;
-    WPM = ((wordsTyped * accuracy) / timeTakenInMs) * 60000;
+
+    // Calculate WPM with character type weighting
+    let weightedCorrects = 0;
+    let weightedWrongs = 0;
+
+    // Count weighted characters for correct indexes
+    for (let i = 0; i < corrects; i++) {
+      const charIndex = correctIndexes[i];
+      const char = content[charIndex];
+      weightedCorrects += getCharacterWeight(char);
+    }
+
+    // Count weighted characters for wrong indexes
+    for (let i = 0; i < wrongs; i++) {
+      const charIndex = wrongIndexes[i];
+      const char = content[charIndex];
+      weightedWrongs += getCharacterWeight(char);
+    }
+
+    const weightedWordsTyped = weightedCorrects + weightedWrongs;
+    WPM = ((weightedWordsTyped * accuracy) / timeTakenInMs) * 60000;
+  }
+
+  function getCharacterWeight(char) {
+    // Check if character is alphabet, number, or English punctuation (half-width)
+    if (/[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\\|,\.\<\>\/?\s]/.test(char)) {
+      return 0.2; // Half-width characters count as 0.2
+    }
+    return 1.0; // Full-width characters (Chinese, etc.) count as 1.0
   }
 
   function wordCorrect(word) {
@@ -1163,9 +1200,20 @@
       ],
     },
     {
-      title: "神級",
+      title: "達人+",
       minWPM: 120,
       maxWPM: 140,
+      color: "#FFD700",
+      description: [
+        "輸入達人，速度已經突破天際！",
+        "這個速度堪稱傳說級別！",
+        "你是真正的輸入大師！",
+      ],
+    },
+    {
+      title: "神級",
+      minWPM: 140,
+      maxWPM: 150,
       color: "#FFDE59",
       description: [
         "神級速度，已經超越人類極限！",
@@ -1174,9 +1222,9 @@
       ],
     },
     {
-      title: "超凡入聖",
-      minWPM: 140,
-      maxWPM: 150,
+      title: "達人MAX",
+      minWPM: 150,
+      maxWPM: Infinity,
       color: "#FFC000",
       description: [
         "超凡入聖，速度已經達到另一個境界！",
@@ -1187,14 +1235,24 @@
   ];
 
   function getGrade() {
-    if (WPM < 10) return "新手";
-    if (WPM < 25) return "初哥";
-    if (WPM < 50) return "好";
-    if (WPM < 75) return "高手";
-    if (WPM < 100) return "快手";
-    if (WPM < 120) return "達人";
-    if (WPM < 140) return "神級";
-    return "超凡入聖";
+    let currentGrades = normalGrades;
+    if (WPM >= 100) {
+      currentGrades = secretGrades;
+    }
+
+    for (let grade of currentGrades) {
+      if (WPM >= grade.minWPM && WPM < grade.maxWPM) {
+        return grade.title;
+      }
+    }
+
+    // If WPM is >= 100 and no specific grade found, return the highest secret grade
+    if (WPM >= 100) {
+      return secretGrades[secretGrades.length - 1].title;
+    }
+
+    // Default to lowest grade if somehow no match
+    return normalGrades[0].title;
   }
 
   function getGradeInfo() {
@@ -1813,7 +1871,46 @@
           onclick={() => setResultsPanelVisibility(true)}>查看成績</button
         >
       {/if}
+
+      <!-- New Passage Selection Button -->
+      <button
+        class="btn-primary bottom-btn"
+        onclick={() => (showPassageSelection = true)}
+        onmouseenter={(e) => showHoverPanel("選擇文章", e)}
+        onmousemove={updateHoverPanelPosition}
+        onmouseleave={hideHoverPanel}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          class="size-6"
+          style="width: 2rem; height: 2rem;"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+          />
+        </svg>
+      </button>
     </div>
+
+    <!-- Passage Selection Modal -->
+    {#if showPassageSelection}
+      <PassageSelection
+        selectedPassage={currentPassage}
+        onSelectPassage={(passage) => {
+          currentPassage = passage;
+          content = passage.content;
+          showPassageSelection = false;
+          restart();
+        }}
+        onClose={() => (showPassageSelection = false)}
+      />
+    {/if}
 
     {#if settingsOpen}
       <div class="overlay"></div>
@@ -1832,7 +1929,7 @@
         </select>
       </div>
       <div class="setting">
-        <textarea bind:value={content} name="content" id="" cols="80" rows="10"
+        <textarea bind:value={content} name="content" id="" rows="10"
         ></textarea>
       </div>
       <div class="setting">
@@ -1898,7 +1995,11 @@
             <span
               class="result-value"
               class:fade-in={showSpeed}
-              onmouseenter={(e) => showHoverPanel("WPM為每分鐘所輸入的字符", e)}
+              onmouseenter={(e) =>
+                showHoverPanel(
+                  "WPM (words per minute)為每分鐘所輸入的字的數目 (英文字母則是每5個字符為1個字)",
+                  e,
+                )}
               onmousemove={updateHoverPanelPosition}
               onmouseleave={hideHoverPanel}>{animatedWPM.toFixed(1)}WPM</span
             >
@@ -2090,6 +2191,10 @@
     border: 3px dashed rgb(38, 38, 84);
     box-shadow: 0px 0px 30px black;
     justify-content: center;
+  }
+
+  .setting textarea {
+    width: 80%;
   }
 
   .settings-panel {
