@@ -325,6 +325,12 @@
     }
   }
 
+  function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  }
+
   function timeUp() {
     if (gameState == GameState.FINISH) return;
     isTimeUp = true;
@@ -1678,10 +1684,69 @@
     <div class="info-bar {gameState === GameState.PLAY ? 'visible' : 'hidden'}">
       {#if gameState !== 3}
         {#if timeLimit > 0}
-          <p>剩餘時間: {Math.ceil(timeLimit - timeElapsed / 1000)}秒</p>
+          <div class="info-item">
+            <span class="info-icon">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="icon-svg"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </span>
+            <span class="info-value"
+              >{formatTime(Math.ceil(timeLimit - timeElapsed / 1000))}</span
+            >
+          </div>
         {/if}
-        <p>速度: {WPM.toFixed(1)}WPM</p>
-        <p>準確度: {(accuracy * 100).toFixed(1) + "%"}</p>
+        <div class="info-item">
+          <span class="info-icon">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="icon-svg"
+            >
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+            </svg>
+          </span>
+          <span class="info-value">{WPM.toFixed(1)}WPM</span>
+        </div>
+        <div class="info-item">
+          <span class="info-icon">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="icon-svg"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <circle cx="12" cy="12" r="6"></circle>
+              <circle cx="12" cy="12" r="2"></circle>
+            </svg>
+          </span>
+          <span class="info-value">{Math.round(accuracy * 100)}%</span>
+        </div>
       {/if}
     </div>
     {#if gameState === GameState.START}
@@ -2452,17 +2517,40 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  .info-bar p {
-    font-size: 0.8rem; /* Smaller labels */
-    margin: 0;
-    color: #ccc;
+  .info-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 10px;
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  .info-bar p:last-child {
-    font-size: 1.5rem; /* Larger actual information */
+  .info-icon {
+    font-size: 1.2rem;
+    filter: grayscale(100%) brightness(1.5);
+  }
+
+  .icon-svg {
+    width: clamp(2vw, 3rem, 5vw);
+    height: clamp(2vw, 3rem, 5vw);
+  }
+
+  .info-label {
+    font-size: clamp(2vw, 3rem, 5vw);
+    color: #ccc;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+
+  .info-value {
+    font-size: clamp(2vw, 3rem, 5vw);
     color: white;
     font-weight: bold;
-    margin-left: auto;
+    letter-spacing: 1px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      Helvetica, Arial, sans-serif;
   }
 
   .scroll-container {
@@ -2657,10 +2745,8 @@
     left: 0;
     right: 0;
     background-color: rgba(0, 0, 0, 0.8);
-    padding: 10px;
     z-index: 1;
     border-radius: 8px;
-    margin-bottom: 20px;
   }
 
   .type-prep {
@@ -2673,16 +2759,14 @@
   /* Utility buttons section (10-20% of screen) */
   .utility-buttons-section {
     position: relative;
-    height: 10vh;
+    height: 7vh;
     width: 100%;
+    margin: 1vh 1vh 0vh 1vh;
     z-index: 1;
     /* border-bottom: 1px solid rgba(255, 255, 255, 0.1); */
   }
 
   .utility-buttons {
-    position: absolute;
-    top: 10px;
-    left: 20px;
     display: flex;
     gap: 10px;
     align-items: center;
@@ -2693,6 +2777,8 @@
   /* Utility buttons styles */
   .utility-btn {
     padding: 0.8em 1.5em;
+    width: clamp(10vw, 5rem, 23vw);
+    height: 8vh;
     font-size: 1rem;
     border-radius: 1rem;
     border: none;
