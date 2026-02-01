@@ -27,7 +27,7 @@
   {children}
 </body>
 <footer class="version-footer">
-  <p>Last updated: 2026-01-31</p>
+  <p>Last updated: 2026-02-01</p>
 </footer>
 
 <style>

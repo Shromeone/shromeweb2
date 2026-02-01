@@ -559,7 +559,16 @@
     caretElement.style.transition = "top 0.2s ease-out, left 0.2s ease-out";
     caretElement.style.top = targetTop + "px";
     caretElement.style.left = targetLeft + "px";
-    caretElement.style.opacity = focused ? "1" : "0.5";
+    caretElement.style.opacity = focused ? "1" : "0.3";
+
+    // Update caret color and animation based on focus state
+    if (focused) {
+      caretElement.classList.remove("unfocused");
+      caretElement.style.backgroundColor = "rgb(87, 191, 255)";
+    } else {
+      caretElement.classList.add("unfocused");
+      caretElement.style.backgroundColor = "grey";
+    }
 
     // Reset the blinking animation when caret moves
     if (resetAnimation) resetCaretBlink();
@@ -574,9 +583,15 @@
     // Force reflow to ensure the class removal is applied
     void caretElement.offsetWidth;
 
-    // Only re-add the .caret class to restart the animation if focused
+    // Update caret color and animation based on focus state
     if (focused) {
+      caretElement.classList.remove("unfocused");
+      caretElement.style.backgroundColor = "rgb(87, 191, 255)";
+      // Only re-add the .caret class to restart the animation if focused
       caretElement.classList.add("caret");
+    } else {
+      caretElement.classList.add("unfocused");
+      caretElement.style.backgroundColor = "grey";
     }
   }
 
@@ -2861,7 +2876,8 @@
     transition:
       top 0.2s ease-out,
       left 0.2s ease-out,
-      opacity 0.3s ease;
+      opacity 0.3s ease,
+      background-color 0.3s ease;
   }
 
   /* Smooth blinking animation for caret */
@@ -2882,6 +2898,12 @@
 
   /* Hide caret when not focused */
   .caret[style*="opacity: 0"] {
+    animation: none;
+  }
+
+  /* Grey caret when unfocused */
+  .caret.unfocused {
+    background-color: grey;
     animation: none;
   }
 
