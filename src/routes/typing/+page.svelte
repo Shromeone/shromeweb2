@@ -1506,12 +1506,17 @@
       !resultsScreen.classList.contains("hidden")
     ) {
       const resultsPanel = document.querySelector(".results-panel");
-      const resultsButtons = document.querySelectorAll(".panel-buttons button");
+      const resultsButtons = document.querySelectorAll(
+        ".utility-buttons button",
+      );
+
+      if (!Array.from(resultsButtons).some((btn) => btn.contains(e.target)))
+        return;
+      rs;
 
       // Check if the click target is not within the results panel, its buttons, or any bottom button
       if (
         !resultsPanel.contains(e.target) &&
-        !Array.from(resultsButtons).some((btn) => btn.contains(e.target)) &&
         !e.target.closest(".bottom-btn")
       ) {
         setResultsPanelVisibility(false);
@@ -1652,10 +1657,10 @@
   >
     {showInputDisplay ? input : ""}
   </div>
-  <div class="scroll-container" bind:this={scrollContainer}>
-    <div
-      class="info-bar {gameState === GameState.PLAY ? 'fixed-top' : 'hidden'}"
-    >
+
+  <!-- Top 10%: type-prep and info-bar -->
+  <div class="top-section">
+    <div class="info-bar {gameState === GameState.PLAY ? 'visible' : 'hidden'}">
       {#if gameState !== 3}
         {#if timeLimit > 0}
           <p>剩餘時間: {Math.ceil(timeLimit - timeElapsed / 1000)}秒</p>
@@ -1674,7 +1679,139 @@
         />
       </div>
     {/if}
-    <div id="start-partition"></div>
+  </div>
+
+  <!-- 10-20%: utility-buttons (formerly bottom-left-buttons) -->
+  <div class="utility-buttons-section">
+    <div class="utility-buttons">
+      <button
+        id="settings-button"
+        class="btn-secondary utility-btn"
+        onclick={handleSettingsToggle}
+        onmouseenter={(e) => showHoverPanel("設定", e)}
+        onmousemove={updateHoverPanelPosition}
+        onmouseleave={hideHoverPanel}
+      >
+        <img
+          src={settingsIcon}
+          alt="settings"
+          class="settings-icon {isSpinning ? 'spinning' : ''} {spinDirection}"
+          style="width: 2rem; height: 2rem;"
+        />
+      </button>
+      <button
+        class="btn-primary utility-btn"
+        onclick={() => (showPassageSelection = true)}
+        onmouseenter={(e) => showHoverPanel("選擇文章", e)}
+        onmousemove={updateHoverPanelPosition}
+        onmouseleave={hideHoverPanel}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          class="size-6"
+          style="width: 2rem; height: 2rem;"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
+          />
+        </svg>
+      </button>
+      {#if gameState === GameState.PLAY}
+        <button
+          id="end-test-btn"
+          class="btn-danger utility-btn"
+          onmouseenter={(e) => {
+            cancelInput();
+            showHoverPanel("結束遊戲", e);
+          }}
+          onmousemove={updateHoverPanelPosition}
+          onmouseleave={hideHoverPanel}
+          onclick={finishGame}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+            class="size-6"
+            style="width: 2rem; height: 2rem;"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M6 18 18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      {/if}
+
+      {#if gameState !== GameState.START}
+        <button
+          class="btn-secondary utility-btn"
+          onmouseenter={(e) => {
+            cancelInput();
+            showHoverPanel("重新開始", e);
+          }}
+          onmousemove={updateHoverPanelPosition}
+          onmouseleave={hideHoverPanel}
+          onclick={restart}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+            class="size-6"
+            style="width: 2rem; height: 2rem;"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+            />
+          </svg>
+        </button>
+      {/if}
+
+      {#if gameState === GameState.FINISH}
+        <button
+          class="btn-primary utility-btn"
+          onclick={() => setResultsPanelVisibility(true)}
+          onmouseenter={(e) => showHoverPanel("查看成績", e)}
+          onmousemove={updateHoverPanelPosition}
+          onmouseleave={hideHoverPanel}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+            class="size-6"
+            style="width: 2rem; height: 2rem;"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+            />
+          </svg>
+        </button>
+      {/if}
+    </div>
+  </div>
+
+  <!-- 30-80%: scroll container -->
+  <div class="scroll-container" bind:this={scrollContainer}>
+    <div class="start-partition"></div>
     <div
       class="test-content {gameState === GameState.PLAY
         ? 'with-fixed-info'
@@ -1832,133 +1969,6 @@
     {#if gameState !== GameState.START}
       <div style="height: 100vh"></div>
     {/if}
-
-    <div class="bottom-left-buttons">
-      <button
-        id="settings-button"
-        class="btn-secondary bottom-btn"
-        onclick={handleSettingsToggle}
-        onmouseenter={(e) => showHoverPanel("設定", e)}
-        onmousemove={updateHoverPanelPosition}
-        onmouseleave={hideHoverPanel}
-      >
-        <img
-          src={settingsIcon}
-          alt="settings"
-          class="settings-icon {isSpinning ? 'spinning' : ''} {spinDirection}"
-          style="width: 2rem; height: 2rem;"
-        />
-      </button>
-      <button
-        class="btn-primary bottom-btn"
-        onclick={() => (showPassageSelection = true)}
-        onmouseenter={(e) => showHoverPanel("選擇文章", e)}
-        onmousemove={updateHoverPanelPosition}
-        onmouseleave={hideHoverPanel}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke-width="1.5"
-          stroke="currentColor"
-          class="size-6"
-          style="width: 2rem; height: 2rem;"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
-          />
-        </svg>
-      </button>
-      {#if gameState === GameState.PLAY}
-        <button
-          id="end-test-btn"
-          class="btn-danger bottom-btn"
-          onmouseenter={(e) => {
-            cancelInput();
-            showHoverPanel("結束遊戲", e);
-          }}
-          onmousemove={updateHoverPanelPosition}
-          onmouseleave={hideHoverPanel}
-          onclick={finishGame}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke-width="1.5"
-            stroke="currentColor"
-            class="size-6"
-            style="width: 2rem; height: 2rem;"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M6 18 18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
-      {/if}
-
-      {#if gameState !== GameState.START}
-        <button
-          class="btn-secondary bottom-btn"
-          onmouseenter={(e) => {
-            cancelInput();
-            showHoverPanel("重新開始", e);
-          }}
-          onmousemove={updateHoverPanelPosition}
-          onmouseleave={hideHoverPanel}
-          onclick={restart}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke-width="1.5"
-            stroke="currentColor"
-            class="size-6"
-            style="width: 2rem; height: 2rem;"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
-            />
-          </svg>
-        </button>
-      {/if}
-
-      {#if gameState === GameState.FINISH}
-        <button
-          class="btn-primary bottom-btn"
-          onclick={() => setResultsPanelVisibility(true)}
-          onmouseenter={(e) => showHoverPanel("查看成績", e)}
-          onmousemove={updateHoverPanelPosition}
-          onmouseleave={hideHoverPanel}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke-width="1.5"
-            stroke="currentColor"
-            class="size-6"
-            style="width: 2rem; height: 2rem;"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-            />
-          </svg>
-        </button>
-      {/if}
-
-      <!-- New Passage Selection Button -->
-    </div>
 
     <!-- Passage Selection Modal -->
     {#if showPassageSelection}
@@ -2187,8 +2197,8 @@
 </div>
 
 <style>
-  #start-partition {
-    height: 20vh;
+  .start-partition {
+    height: 10vh;
   }
   .passage-select,
   .time-select,
@@ -2573,11 +2583,66 @@
   }
 
   .type-prep-container {
-    position: sticky;
     top: 0;
+    background-color: transparent !important;
+    padding: 10px;
+    z-index: 10;
+    border-radius: 8px;
+    /* margin-bottom: 20px; */
+  }
+
+  .type-prep {
+    font-size: 2rem;
+    width: 80%;
+    height: 5vh;
+    display: inline-block;
+  }
+
+  /* Top section (10% of screen) for type-prep and info-bar */
+  .top-section {
+    height: 10vh;
+    width: 100%;
+    z-index: 1;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .info-bar {
+    display: flex;
+    height: 8vh;
+    background-color: rgba(0, 0, 0, 0.9);
+    z-index: 1;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .info-bar p {
+    font-size: 0.8rem; /* Smaller labels */
+    margin: 0;
+    color: #ccc;
+  }
+
+  .info-bar p:last-child {
+    font-size: 1.5rem; /* Larger actual information */
+    color: white;
+    font-weight: bold;
+    margin-left: auto;
+  }
+
+  .info-bar.hidden {
+    display: none;
+  }
+
+  .info-bar.visible {
+    display: flex;
+  }
+
+  .type-prep-container {
+    position: absolute;
+    top: 50px;
+    left: 0;
+    right: 0;
     background-color: rgba(0, 0, 0, 0.8);
     padding: 10px;
-    z-index: 1000;
+    z-index: 1;
     border-radius: 8px;
     margin-bottom: 20px;
   }
@@ -2589,15 +2654,62 @@
     display: inline-block;
   }
 
-  .bottom-left-buttons {
-    position: fixed;
-    bottom: 20px;
+  /* Utility buttons section (10-20% of screen) */
+  .utility-buttons-section {
+    position: relative;
+    height: 10vh;
+    width: 100%;
+    z-index: 1;
+    /* border-bottom: 1px solid rgba(255, 255, 255, 0.1); */
+  }
+
+  .utility-buttons {
+    position: absolute;
+    top: 10px;
     left: 20px;
     display: flex;
     gap: 10px;
     align-items: center;
-    z-index: 1000;
+    z-index: 10;
     flex-wrap: wrap;
+  }
+
+  /* Utility buttons styles */
+  .utility-btn {
+    padding: 0.8em 1.5em;
+    font-size: 1rem;
+    border-radius: 1rem;
+    border: none;
+    color: white;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .utility-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    opacity: 80%;
+  }
+
+  .utility-btn:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Scroll container section (30-80% of screen) */
+  .scroll-container {
+    position: relative;
+    width: 90vw;
+    height: 60vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    margin: 20px auto;
+    padding: 20px;
+    border: 2px solid #333;
+    border-radius: 8px;
+    background-color: #1a1a1a;
+    z-index: 1;
   }
 
   /* Override color scheme styles for bottom buttons */
@@ -2623,16 +2735,16 @@
     box-shadow: var(--shadow-sm);
   }
 
-  /* Mobile styles for bottom buttons - using aspect ratio */
+  /* Mobile styles for utility buttons - using aspect ratio */
   @media (max-aspect-ratio: 1/1) and (max-width: 768px) {
     /* Portrait mobile */
-    .bottom-left-buttons {
-      bottom: 10px;
-      left: 10px;
+    .utility-buttons {
+      top: 5px;
+      left: 5px;
       gap: 5px;
     }
 
-    .bottom-btn {
+    .utility-btn {
       padding: 0.6em 1.2em;
       font-size: 0.9rem;
     }
@@ -2640,13 +2752,13 @@
 
   @media (min-aspect-ratio: 1/1) and (max-width: 896px) and (max-height: 414px) {
     /* Landscape mobile */
-    .bottom-left-buttons {
-      bottom: 10px;
-      left: 10px;
+    .utility-buttons {
+      top: 5px;
+      left: 5px;
       gap: 5px;
     }
 
-    .bottom-btn {
+    .utility-btn {
       padding: 0.6em 1.2em;
       font-size: 0.9rem;
     }
@@ -2654,13 +2766,13 @@
 
   @media (max-aspect-ratio: 0.6/1) and (max-width: 480px) {
     /* Very narrow portrait mobile */
-    .bottom-left-buttons {
-      bottom: 5px;
+    .utility-buttons {
+      top: 5px;
       left: 5px;
       gap: 3px;
     }
 
-    .bottom-btn {
+    .utility-btn {
       padding: 0.5em 1em;
       font-size: 0.8rem;
     }

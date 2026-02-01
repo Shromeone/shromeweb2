@@ -15,7 +15,13 @@
   let customText = "";
 
   // Categories for filtering
-  const categories = ["現代", "英文", "DSE十二篇範文", "流行曲歌詞"];
+  const categories = [
+    "DSE十二篇範文",
+    "說明文",
+    "白話文",
+    "英文",
+    "流行曲歌詞",
+  ];
 
   // Helper function to get passage length category
   function getPassageLengthCategory(content) {
