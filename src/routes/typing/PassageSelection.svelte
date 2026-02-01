@@ -6,6 +6,7 @@
   export let selectedPassage = null;
   export let onSelectPassage;
   export let onClose;
+  export let currentContent = "";
 
   // State
   let searchTerm = "";
@@ -137,11 +138,16 @@
     customText = "";
   }
 
+  // Handle clear custom text
+  function clearCustomText() {
+    customText = "";
+  }
+
   // Handle custom text panel open
   function openCustomTextPanel() {
     showCustomTextPanel = true;
     // Set default text to current test content
-    customText = content || "";
+    customText = currentContent || "";
   }
 
   // Keyboard navigation
@@ -151,17 +157,41 @@
     }
   }
 
+  // Tooltip functions
+  let hoverTooltipVisible = false;
+  let hoverTooltipContent = "";
+  let hoverTooltipX = 0;
+  let hoverTooltipY = 0;
+
+  function showHoverTooltip(event, content) {
+    hoverTooltipContent = content;
+    hoverTooltipX = event.clientX + 10;
+    hoverTooltipY = event.clientY + 10;
+    hoverTooltipVisible = true;
+  }
+
+  function updateTooltipPosition(event) {
+    if (hoverTooltipVisible) {
+      hoverTooltipX = event.clientX + 10;
+      hoverTooltipY = event.clientY + 10;
+    }
+  }
+
+  function hideHoverTooltip() {
+    hoverTooltipVisible = false;
+  }
+
   onMount(() => {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   });
 </script>
 
-<div class="passage-selection-overlay" on:click={handleClose}>
-  <div class="passage-selection-panel" on:click={(e) => e.stopPropagation()}>
+<div class="passage-selection-overlay" onclick={handleClose}>
+  <div class="passage-selection-panel" onclick={(e) => e.stopPropagation()}>
     <div class="panel-header">
       <h2>選擇文章</h2>
-      <button class="close-btn" on:click={handleClose}>
+      <button class="close-btn" onclick={handleClose}>
         <svg
           width="24"
           height="24"
@@ -185,9 +215,9 @@
             class="search-input"
             placeholder="搜尋文章標題或內容..."
             bind:value={searchTerm}
-            on:input={handleSearch}
+            oninput={handleSearch}
           />
-          <button class="custom-text-btn" on:click={openCustomTextPanel}>
+          <button class="custom-text-btn" onclick={openCustomTextPanel}>
             自訂文章
           </button>
         </div>
@@ -204,7 +234,7 @@
                 class="category-btn {selectedCategories.includes(category)
                   ? 'active'
                   : ''}"
-                on:click={() => toggleCategory(category)}
+                onclick={() => toggleCategory(category)}
               >
                 {category}
               </button>
@@ -221,7 +251,7 @@
                 class="length-btn {selectedLength === length.value
                   ? 'active'
                   : ''}"
-                on:click={() => selectLength(length.value)}
+                onclick={() => selectLength(length.value)}
               >
                 {length.label}
               </button>
@@ -238,7 +268,7 @@
           <p>沒有找到符合條件的文章</p>
           <button
             class="clear-filters-btn"
-            on:click={() => {
+            onclick={() => {
               searchTerm = "";
               selectedCategories = [];
               selectedLength = "all";
@@ -249,7 +279,7 @@
         </div>
       {:else}
         {#each filteredPassages as passage, index}
-          <button class="passage-card" on:click={() => selectPassage(passage)}>
+          <button class="passage-card" onclick={() => selectPassage(passage)}>
             <div class="passage-header">
               <h3 class="passage-title">{passage.title}</h3>
               <span class="passage-length">{passage.content.length} 字</span>
@@ -274,11 +304,11 @@
 
     <!-- Custom Text Panel -->
     {#if showCustomTextPanel}
-      <div class="custom-text-overlay" on:click={closeCustomTextPanel}>
-        <div class="custom-text-panel" on:click={(e) => e.stopPropagation()}>
+      <div class="custom-text-overlay" onclick={closeCustomTextPanel}>
+        <div class="custom-text-panel" onclick={(e) => e.stopPropagation()}>
           <div class="panel-header">
             <h2>自訂文章</h2>
-            <button class="close-btn" on:click={closeCustomTextPanel}>
+            <button class="close-btn" onclick={closeCustomTextPanel}>
               <svg
                 width="24"
                 height="24"
@@ -306,19 +336,51 @@
               </div>
             </div>
             <div class="custom-text-actions">
-              <button class="cancel-btn" on:click={closeCustomTextPanel}>
+              <button
+                class="clear-btn"
+                onclick={clearCustomText}
+                onmouseenter={(e) => showHoverTooltip(e, "清空文章")}
+                onmousemove={updateTooltipPosition}
+                onmouseleave={hideHoverTooltip}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="1.5"
+                  stroke="currentColor"
+                  class="trash-icon"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+                  />
+                </svg>
+              </button>
+              <button class="cancel-btn" onclick={closeCustomTextPanel}>
                 取消
               </button>
               <button
                 class="select-btn"
                 disabled={!customText.trim()}
-                on:click={selectCustomText}
+                onclick={selectCustomText}
               >
                 選擇此文章
               </button>
             </div>
           </div>
         </div>
+      </div>
+    {/if}
+
+    <!-- Tooltip -->
+    {#if hoverTooltipVisible}
+      <div
+        class="hover-tooltip visible"
+        style="left: {hoverTooltipX}px; top: {hoverTooltipY}px;"
+      >
+        {hoverTooltipContent}
       </div>
     {/if}
   </div>
@@ -721,6 +783,34 @@
     border-color: #666;
   }
 
+  .clear-btn {
+    background: #dc3545;
+    color: white;
+    border-color: #dc3545;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid #dc3545;
+  }
+
+  .clear-btn:hover {
+    background: #c82333;
+    border-color: #c82333;
+    transform: translateY(-1px);
+  }
+
+  .clear-btn:active {
+    transform: translateY(0);
+  }
+
+  .clear-btn .trash-icon {
+    width: 1.2rem;
+    height: 1.2rem;
+  }
+
   .select-btn {
     background: #28a745;
     color: white;
@@ -754,5 +844,29 @@
     .select-btn {
       width: 100%;
     }
+  }
+
+  /* Tooltip Styles */
+  .hover-tooltip {
+    position: fixed;
+    background-color: #333;
+    color: white;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.25rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    z-index: 5000;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(-5px);
+    transition:
+      opacity 0.2s ease,
+      transform 0.2s ease;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .hover-tooltip.visible {
+    opacity: 1;
+    transform: translateY(0);
   }
 </style>

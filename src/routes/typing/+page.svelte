@@ -1974,6 +1974,7 @@
     {#if showPassageSelection}
       <PassageSelection
         selectedPassage={currentPassage}
+        currentContent={content}
         onSelectPassage={(passage) => {
           currentPassage = passage;
           content = passage.content;
