@@ -162,9 +162,10 @@
   onMount(() => {
     // initCangjieMap();
     setResultsPanelVisibility(false);
-    updateCaretInterval = setInterval(() => {
-      updateCaretPosition(false);
-    }, 100);
+    // Remove constant caret position updates - only update when needed
+    // updateCaretInterval = setInterval(() => {
+    //   updateCaretPosition(false);
+    // }, 100);
     // setSettingsVisibility(false);
     content = content.replace(/(?:\r\n|\r|\n)/g, "");
     if (removeContentSpace) content = content.replace(/\s/g, "");
@@ -2042,9 +2043,10 @@
     >
       <img
         class="hints-picture"
-        src={currentWordIndex >= 0
+        src={hintState === HintState.SHOWN || hintState === HintState.URL
           ? `https://www.hkcards.com/img/cj/${content[currentWordIndex]}.png`
           : ""}
+        loading="lazy"
       />
       <p id="cangjie-code">
         {#each [...cangjieChars, ...Array(Math.max(0, 5 - cangjieChars.length)).fill("")] as char, i}
