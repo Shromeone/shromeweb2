@@ -233,13 +233,17 @@
     if (document.activeElement === typePrep) return;
     if (document.activeElement.localName === "button") return;
     if (settingsOpen) return;
+    if (showPassageSelection) return;
     if (!inputBox) return;
     inputBox.focus();
   }
 
   function tryPressEnterFocus(e) {
     if (document.activeElement !== typePrep) return;
+    if (settingsOpen) return;
+    if (showPassageSelection) return;
     if (e.key !== "Enter") return;
+
     currentWordIndex = 0;
     enterHiddenState();
     updateInputBoxPos();
@@ -499,6 +503,9 @@
 
     const weightedWordsTyped = weightedCorrects + weightedWrongs;
     WPM = ((weightedWordsTyped * accuracy) / timeTakenInMs) * 60000;
+    if (timeTakenInMs == 0) {
+      WPM = Math.Infinity;
+    }
   }
 
   function getCharacterWeight(char) {
